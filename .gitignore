@@ -1,0 +1,38 @@
+# Dependencies & build
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Secrets & local env
+.env
+.env.*
+!.env.example
+**/xmrcheckout.env
+**/login.json
+**/*wallet*
+**/*.wallet
+**/keys.json
+**/credentials*
+
+# Data / DBs
+data/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Screenshots / local media dumps
+shots/
+**/shots/
+
+# Logs & coverage
+*.log
+npm-debug.log*
+coverage/

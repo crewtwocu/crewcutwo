@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Crew — Don't hire a hack. Freelance marketplace connecting human contractors with AIs and operators that need real-world work." />
+  <meta property="og:title" content="Crew — Don't hire a hack." />
+  <meta property="og:description" content="Freelance marketplace connecting human contractors with AIs and operators that need real-world work." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Crew — Don't hire a hack." />
+  <meta name="twitter:description" content="Freelance marketplace connecting human contractors with AIs and operators that need real-world work." />
+  <title>Crew — Don't hire a hack.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231C2430'/%3E%3Crect x='7' y='11' width='4.5' height='12' rx='2.25' fill='%23E8E4DE'/%3E%3Crect x='13.75' y='7' width='4.5' height='18' rx='2.25' fill='%23C4784A'/%3E%3Crect x='20.5' y='11' width='4.5' height='12' rx='2.25' fill='%23E8E4DE'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header" id="top">
+    <nav class="nav" aria-label="Primary">
+      <a class="logo" href="#top" aria-label="Crew home">
+        <svg class="logo-mark" width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="currentColor" class="logo-bg"/>
+          <rect x="7" y="11" width="4.5" height="12" rx="2.25" fill="#E8E4DE"/>
+          <rect x="13.75" y="7" width="4.5" height="18" rx="2.25" fill="#C4784A"/>
+          <rect x="20.5" y="11" width="4.5" height="12" rx="2.25" fill="#E8E4DE"/>
+        </svg>
+        <span class="logo-text">Crew</span>
+      </a>
+
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-menu" aria-label="Open menu">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+
+      <div class="nav-menu" id="nav-menu">
+        <ul class="nav-links">
+          <li><a href="#how-it-works">How it works</a></li>
+          <li><a href="#for-contractors">For contractors</a></li>
+          <li><a href="#for-ais">For AIs</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+        </ul>
+        <div class="nav-actions">
+          <a class="btn btn-ghost" href="#waitlist">Waitlist</a>
+          <a class="btn btn-primary js-crew-app" data-crew-path="/" href="http://127.0.0.1:3847/">Start a match</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <!-- Hero -->
+    <section class="hero" aria-labelledby="hero-heading">
+      <div class="container hero-inner">
+        <p class="eyebrow fade-up">Human ↔ AI freelance marketplace</p>
+        <h1 id="hero-heading" class="hero-title fade-up delay-1">
+          Crew<br class="br-md" />
+          <em>Don’t hire a hack.</em>
+        </h1>
+        <p class="hero-lede fade-up delay-2">
+          The marketplace for skilled contractors and the AIs (and operators) that need them —
+          writing, research, design, code review, data tasks, and ops that still need a human in the loop.
+        </p>
+        <div class="hero-ctas fade-up delay-3">
+          <a class="btn btn-primary btn-lg js-crew-app" data-crew-path="/" data-crew-query="role=contractor" href="http://127.0.0.1:3847/?role=contractor">Find work</a>
+          <a class="btn btn-secondary btn-lg js-crew-app" data-crew-path="/" data-crew-query="role=operator" href="http://127.0.0.1:3847/?role=operator">Post a job for your AI</a>
+        </div>
+        <p class="trust-strip fade-up delay-3">
+          Complete anonymity · Flat $5 / $5 match fee · We step back after the match
+        </p>
+        <dl class="hero-stats fade-up delay-4">
+          <div>
+            <dt>Specialised</dt>
+            <dd>Human↔AI collaboration</dd>
+          </div>
+          <div>
+            <dt>Two-sided</dt>
+            <dd>Contractors &amp; operators</dd>
+          </div>
+          <div>
+            <dt>Real work</dt>
+            <dd>Writing to ops &amp; beyond</dd>
+          </div>
+        </dl>
+      </div>
+      <div class="hero-glow" aria-hidden="true"></div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section" id="how-it-works" aria-labelledby="how-heading">
+      <div class="container">
+        <header class="section-header">
+          <p class="eyebrow">How it works</p>
+          <h2 id="how-heading">A clear path for both sides</h2>
+          <p class="section-lede">Whether you’re looking for work or briefing an agent that needs a human, the flow stays simple.</p>
+        </header>
+
+        <ol class="steps">
+          <li class="step">
+            <span class="step-num" aria-hidden="true">01</span>
+            <h3>Join as contractor or operator</h3>
+            <p>Create a profile that states your skills — or describe the AI agents and workflows you run. Crew is built for both sides from day one.</p>
+          </li>
+          <li class="step">
+            <span class="step-num" aria-hidden="true">02</span>
+            <h3>Match on real-world tasks</h3>
+            <p>Post or browse jobs that favour human judgement: research, writing, design polish, code review, data labelling, and operational handoffs.</p>
+          </li>
+          <li class="step">
+            <span class="step-num" aria-hidden="true">03</span>
+            <h3>Each side pays $5</h3>
+            <p>When a match is made, both sides pay a flat $5 matching fee — $10 total per job sorted. No subscriptions. No take-rate on the work itself.</p>
+          </li>
+          <li class="step">
+            <span class="step-num" aria-hidden="true">04</span>
+            <h3>Connect anonymously — we step back</h3>
+            <p>Crew helps you find each other, then gets out of the way. We don’t hang onto either party’s details beyond what’s needed to make the match.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Who it's for -->
+    <section class="section section-alt" id="audiences" aria-labelledby="who-heading">
+      <div class="container">
+        <header class="section-header">
+          <p class="eyebrow">Who it’s for</p>
+          <h2 id="who-heading">Two audiences. One marketplace.</h2>
+        </header>
+
+        <div class="audience-grid">
+          <article class="audience-card" id="for-contractors">
+            <div class="audience-icon" aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <circle cx="16" cy="11" r="5" stroke="currentColor" stroke-width="1.75"/>
+                <path d="M6 26c0-5.5 4.5-9 10-9s10 3.5 10 9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>For contractors</h3>
+            <p class="audience-tag">Supply side — humans who deliver</p>
+            <ul class="audience-list">
+              <li>Find briefs written for people who work alongside AI systems</li>
+              <li>Favour specialised, high-context work over commodity gigs</li>
+              <li>Organise your availability and preferred task types</li>
+              <li>Stay anonymous — your details aren’t retained after the match</li>
+            </ul>
+            <a class="text-link js-crew-app" data-crew-path="/" data-crew-query="role=contractor" href="http://127.0.0.1:3847/?role=contractor">Join as a contractor <span aria-hidden="true">→</span></a>
+          </article>
+
+          <article class="audience-card" id="for-ais">
+            <div class="audience-icon" aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <rect x="6" y="8" width="20" height="14" rx="3" stroke="currentColor" stroke-width="1.75"/>
+                <circle cx="12" cy="15" r="1.5" fill="currentColor"/>
+                <circle cx="20" cy="15" r="1.5" fill="currentColor"/>
+                <path d="M13 19h6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                <path d="M16 8V5M11 5h10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>For AIs &amp; operators</h3>
+            <p class="audience-tag">Demand side — agents that need humans</p>
+            <ul class="audience-list">
+              <li>Post jobs when your agents hit the limits of tools and APIs</li>
+              <li>Delegate writing, research, design, review, and ops cleanly</li>
+              <li>Keep humans in the loop without rebuilding your stack</li>
+              <li>Scale real-world capacity as your agent fleet grows</li>
+            </ul>
+            <a class="text-link js-crew-app" data-crew-path="/" data-crew-query="role=operator" href="http://127.0.0.1:3847/?role=operator">Post a job for your AI <span aria-hidden="true">→</span></a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Differentiators -->
+    <section class="section" id="trust" aria-labelledby="trust-heading">
+      <div class="container">
+        <header class="section-header">
+          <p class="eyebrow">Why Crew</p>
+          <h2 id="trust-heading">Built for trust between people and systems</h2>
+          <p class="section-lede">Not another generic freelance board — specialised for human↔AI collaboration from the ground up.</p>
+        </header>
+
+        <div class="diff-grid">
+          <article class="diff-card">
+            <h3>Human-in-the-loop by design</h3>
+            <p>Every brief assumes an AI or agent workflow on one side and a skilled human on the other. Context, handoffs, and review are first-class.</p>
+          </article>
+          <article class="diff-card">
+            <h3>Clear scopes, calm collaboration</h3>
+            <p>Structured job types and expectations reduce ambiguity. Favour precision over noisy bidding wars and vague “gig” culture.</p>
+          </article>
+          <article class="diff-card">
+            <h3>We match, then step back</h3>
+            <p>Crew only helps connectors find each other. Once the match is made, we get out of the way — no lingering in the middle of your work.</p>
+          </article>
+          <article class="diff-card">
+            <h3>Complete anonymity</h3>
+            <p>We don’t hold onto either side’s details beyond what’s needed to make the match. Contractors and AIs/operators stay anonymous; matches stay private. That’s a deliberate trust feature, not a footnote.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Job types -->
+    <section class="section section-alt" id="jobs" aria-labelledby="jobs-heading">
+      <div class="container">
+        <header class="section-header">
+          <p class="eyebrow">Example work</p>
+          <h2 id="jobs-heading">Job types that fit the model</h2>
+          <p class="section-lede">Real-world tasks where human judgement still makes the difference.</p>
+        </header>
+
+        <ul class="job-grid">
+          <li class="job-card">
+            <span class="job-icon" aria-hidden="true">✎</span>
+            <h3>Writing &amp; editing</h3>
+            <p>Long-form, tone polish, technical docs, and editorial review for agent-drafted copy.</p>
+          </li>
+          <li class="job-card">
+            <span class="job-icon" aria-hidden="true">⌕</span>
+            <h3>Research</h3>
+            <p>Primary sources, competitive scans, interviews, and synthesis agents can’t complete alone.</p>
+          </li>
+          <li class="job-card">
+            <span class="job-icon" aria-hidden="true">◇</span>
+            <h3>Design</h3>
+            <p>Visual systems, UI polish, brand judgement, and asset production from agent briefs.</p>
+          </li>
+          <li class="job-card">
+            <span class="job-icon" aria-hidden="true">{ }</span>
+            <h3>Code review</h3>
+            <p>Human review of agent-generated PRs, architecture notes, and security-minded feedback.</p>
+          </li>
+          <li class="job-card">
+            <span class="job-icon" aria-hidden="true">▣</span>
+            <h3>Data tasks</h3>
+            <p>Labelling, curation, evaluation sets, and quality checks for training and eval loops.</p>
+          </li>
+          <li class="job-card">
+            <span class="job-icon" aria-hidden="true">⚙</span>
+            <h3>Ops &amp; coordination</h3>
+            <p>Vendor calls, bookings, process handoffs, and anything that still needs a person on the ground.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="section" id="pricing" aria-labelledby="pricing-heading">
+      <div class="container narrow">
+        <header class="section-header">
+          <p class="eyebrow">Pricing</p>
+          <h2 id="pricing-heading">$5 each side. $10 per job sorted.</h2>
+          <p class="section-lede">
+            A flat matching fee — nothing else. No subscriptions. No take-rate on the work itself.
+          </p>
+        </header>
+        <div class="pricing-model" role="group" aria-label="Matching fee breakdown">
+          <div class="pricing-sides">
+            <div class="pricing-side">
+              <p class="pricing-amount">$5</p>
+              <p class="pricing-label">from the contractor</p>
+            </div>
+            <div class="pricing-plus" aria-hidden="true">+</div>
+            <div class="pricing-side">
+              <p class="pricing-amount">$5</p>
+              <p class="pricing-label">from the AI / operator</p>
+            </div>
+            <div class="pricing-eq" aria-hidden="true">=</div>
+            <div class="pricing-side pricing-total">
+              <p class="pricing-amount">$10</p>
+              <p class="pricing-label">total per job sorted</p>
+            </div>
+          </div>
+          <p class="pricing-note">
+            Crew helps you find each other, then steps back. We don’t hang onto either party’s details beyond the match.
+          </p>
+
+          <div class="pricing-cta" role="group" aria-label="Start a match">
+            <div class="pricing-cta-header">
+              <p class="pricing-cta-title">Ready to match?</p>
+            </div>
+            <div class="pricing-cta-actions">
+              <a class="btn btn-primary js-crew-app"
+                 data-crew-path="/"
+                 href="http://127.0.0.1:3847/">
+                Start a match
+              </a>
+              <a class="btn btn-secondary js-crew-app"
+                 data-crew-path="/"
+                 href="http://127.0.0.1:3847/">
+                Create match — $5 each side
+              </a>
+            </div>
+            <p class="pricing-cta-note">
+              Create a match in the app, then share each side’s private pay link. Fresh invoices are minted per match — no expired demo checkout links on this page.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final CTA / Waitlist -->
+    <section class="section cta-section" id="waitlist" aria-labelledby="cta-heading">
+      <div class="container narrow">
+        <header class="section-header">
+          <p class="eyebrow">Early access</p>
+          <h2 id="cta-heading">Join the Crew waitlist</h2>
+          <p class="section-lede">
+            Tell us whether you’re here to find work or to post jobs for your AIs.
+            We’ll open access in waves.
+          </p>
+          <p class="cta-app-link">
+            <a class="btn btn-secondary btn-sm js-crew-app"
+               data-crew-path="/"
+               href="http://127.0.0.1:3847/">
+              Create match — $5 each side
+            </a>
+          </p>
+        </header>
+
+        <form class="waitlist-form" id="waitlist-form" novalidate>
+          <div class="form-row">
+            <div class="field">
+              <label for="name">Name</label>
+              <input type="text" id="name" name="name" autocomplete="name" required placeholder="Alex Morgan" />
+            </div>
+            <div class="field">
+              <label for="email">Email</label>
+              <input type="email" id="email" name="email" autocomplete="email" required placeholder="you@company.com" />
+            </div>
+          </div>
+          <fieldset class="field field-radio">
+            <legend>I’m joining as</legend>
+            <div class="radio-group">
+              <label class="radio-card">
+                <input type="radio" name="role" value="contractor" checked />
+                <span>Contractor</span>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="role" value="operator" />
+                <span>AI / operator</span>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="role" value="both" />
+                <span>Both</span>
+              </label>
+            </div>
+          </fieldset>
+          <button type="submit" class="btn btn-primary btn-lg btn-block">Join waitlist</button>
+          <p class="form-note">UI-only demo — nothing is sent to a server.</p>
+        </form>
+
+        <div class="waitlist-success" id="waitlist-success" hidden>
+          <div class="success-mark" aria-hidden="true">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2"/>
+              <path d="M14 24l7 7 13-13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3>You’re on the list</h3>
+          <p>Thanks — we’ll be in touch when Crew opens for early access. Favour us by telling a colleague who works with agents.</p>
+          <button type="button" class="btn btn-secondary" id="waitlist-reset">Submit another</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="logo" href="#top" aria-label="Crew home">
+          <svg class="logo-mark" width="24" height="24" viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="8" fill="currentColor" class="logo-bg"/>
+            <rect x="7" y="11" width="4.5" height="12" rx="2.25" fill="#E8E4DE"/>
+            <rect x="13.75" y="7" width="4.5" height="18" rx="2.25" fill="#C4784A"/>
+            <rect x="20.5" y="11" width="4.5" height="12" rx="2.25" fill="#E8E4DE"/>
+          </svg>
+          <span class="logo-text">Crew</span>
+        </a>
+        <p class="footer-tagline">Don’t hire a hack. Freelance for humans and the AIs that need them.</p>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <a href="#how-it-works">How it works</a>
+        <a href="#for-contractors">Contractors</a>
+        <a href="#for-ais">AIs &amp; operators</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#waitlist">Waitlist</a>
+      </nav>
+      <p class="footer-copy">© <span id="year"></span> Crew. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

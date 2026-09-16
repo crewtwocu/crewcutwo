@@ -1,0 +1,49 @@
+# One-command Crew demo (mock by default — no secrets in the image).
+#
+#   docker compose up --build
+#
+# Match app:  http://localhost:3847
+# Marketing:  http://localhost:8080
+#   → keep CREW_APP_URL = http://localhost:3847 in ../marketing/config.js
+#
+# Live XMR Checkout (optional — never bake keys into the Dockerfile):
+#   cp .env.example .env   # gitignored
+#   # set XMRCHECKOUT_API_KEY=... and CREW_MOCK_ONLY=0 in .env
+#   docker compose up --build
+# Compose reads `.env` for ${...} substitution into the match service.
+
+services:
+  match:
+    build: .
+    ports:
+      - "3847:3847"
+    environment:
+      PORT: "3847"
+      PUBLIC_BASE_URL: "http://localhost:3847"
+      # Safe demo default: mock pay only (skips shared secrets paths)
+      CREW_MOCK_ONLY: ${CREW_MOCK_ONLY:-1}
+      DB_PATH: /app/data/crew.db
+      # Optional live vars — set in local `.env` (not committed); empty = mock
+      XMRCHECKOUT_API_KEY: ${XMRCHECKOUT_API_KEY:-}
+      XMRCHECKOUT_BASE_URL: ${XMRCHECKOUT_BASE_URL:-https://xmrcheckout.com/api/core}
+      XMRCHECKOUT_WEBHOOK_SECRET: ${XMRCHECKOUT_WEBHOOK_SECRET:-}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+      XMRCHECKOUT_STORE_ID: ${XMRCHECKOUT_STORE_ID:-}
+      ALLOW_MOCK_PAY: ${ALLOW_MOCK_PAY:-}
+    volumes:
+      - crew-data:/app/data
+    restart: unless-stopped
+
+  # Static marketing from sibling ../marketing
+  marketing:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ../marketing:/usr/share/nginx/html:ro
+    depends_on:
+      - match
+    restart: unless-stopped
+
+volumes:
+  crew-data:
