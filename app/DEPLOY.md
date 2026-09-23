@@ -67,3 +67,13 @@ Match-only: `docker compose up --build match`.
 6. Smoke: create a match → open both share links → (mock or live) pay path → one-time reveal with optional handoff hint
 
 Local confidence check (no live key): `npm run dry-run`.
+
+## Render (Starter Docker)
+
+Monorepo Blueprint: repo-root [`render.yaml`](../render.yaml) → web service **crewcutwo** (`runtime: docker`, `plan: starter`, disk `/app/data`).
+
+1. Push this repo to GitHub (`crewtwocu/crewcutwo`).
+2. [Dashboard → Blueprints](https://dashboard.render.com/blueprints) → **New Blueprint Instance**, or open [Deploy to Render](https://render.com/deploy?repo=https://github.com/crewtwocu/crewcutwo).
+3. Connect the GitHub repo; confirm **Starter** (not Free — Free cannot attach disks / sleeps).
+4. When prompted, set secrets: `PUBLIC_BASE_URL` (https, no trailing slash — use the `*.onrender.com` URL after first deploy if needed), `XMRCHECKOUT_API_KEY`, and optional `XMRCHECKOUT_BASE_URL` / `XMRCHECKOUT_WEBHOOK_SECRET` / `XMRCHECKOUT_STORE_ID`.
+5. `CREW_MOCK_ONLY=0` and `DB_PATH=/app/data/crew.db` are set in the Blueprint. Point marketing `CREW_APP_URL` at the public app URL.

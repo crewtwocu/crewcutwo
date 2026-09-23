@@ -59,6 +59,8 @@ Compose mounts sibling `../marketing` and keeps mock defaults. Match-only: `dock
 
 ## Deploy
 
+**Render (match app):** root [`render.yaml`](render.yaml) — Docker web service on **Starter** with SQLite disk at `/app/data`. Steps in [`app/DEPLOY.md`](app/DEPLOY.md#render-starter-docker).
+
 See **[app/DEPLOY.md](./app/DEPLOY.md)** for Origin namespace (`crew` / `crew2cU`), production env, marketing `CREW_APP_URL`, and the go-live checklist.
 
 ## Secrets

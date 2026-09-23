@@ -1,0 +1,41 @@
+# Render Blueprint — Crew match app (Docker + SQLite disk)
+# Deploy: https://dashboard.render.com/blueprints → New Blueprint Instance
+# Or: https://render.com/deploy?repo=https://github.com/crewtwocu/crewcutwo
+#
+# Starter (~$7) is always-on; Free has no persistent disks and sleeps.
+# After first sync: set sync:false secrets in the dashboard, then set
+# PUBLIC_BASE_URL to the service https URL (no trailing slash).
+
+services:
+  - type: web
+    name: crewcutwo
+    runtime: docker
+    plan: starter
+    region: oregon
+    rootDir: app
+    dockerfilePath: ./app/Dockerfile
+    dockerContext: ./app
+    healthCheckPath: /health
+    numInstances: 1
+    disk:
+      name: crew-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CREW_MOCK_ONLY
+        value: "0"
+      - key: DB_PATH
+        value: /app/data/crew.db
+      # Render injects PORT; app listens on process.env.PORT
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: XMRCHECKOUT_API_KEY
+        sync: false
+      - key: XMRCHECKOUT_BASE_URL
+        sync: false
+      - key: XMRCHECKOUT_WEBHOOK_SECRET
+        sync: false
+      - key: XMRCHECKOUT_STORE_ID
+        sync: false
