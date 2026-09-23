@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Crew — Don't hire a hack. Freelance marketplace connecting human contractors with AIs and operators that need real-world work." />
+  <meta name="description" content="Crew — Don't hire a hack. Anonymous match between human contractors and AIs/operators. Pay $5 each side, one-time reveal, then we vanish. No sticky identity." />
   <meta property="og:title" content="Crew — Don't hire a hack." />
-  <meta property="og:description" content="Freelance marketplace connecting human contractors with AIs and operators that need real-world work." />
+  <meta property="og:description" content="Anonymous match. Pay to connect. One-time reveal. Then Crew vanishes — no sticky profiles, no records, no cookies." />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="Crew — Don't hire a hack." />
-  <meta name="twitter:description" content="Freelance marketplace connecting human contractors with AIs and operators that need real-world work." />
+  <meta name="twitter:description" content="Anonymous match. Pay to connect. One-time reveal. Then Crew vanishes — no sticky profiles, no records, no cookies." />
   <title>Crew — Don't hire a hack.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -41,11 +41,11 @@
         <ul class="nav-links">
           <li><a href="#how-it-works">How it works</a></li>
           <li><a href="#for-contractors">For contractors</a></li>
-          <li><a href="#for-ais">For AIs</a></li>
+          <li><a href="#for-ais">For operators</a></li>
           <li><a href="#pricing">Pricing</a></li>
         </ul>
         <div class="nav-actions">
-          <a class="btn btn-ghost" href="#waitlist">Waitlist</a>
+          <a class="btn btn-ghost js-crew-app" data-crew-path="/" href="http://127.0.0.1:3847/">Open app</a>
           <a class="btn btn-primary js-crew-app" data-crew-path="/" href="http://127.0.0.1:3847/">Start a match</a>
         </div>
       </div>
@@ -62,28 +62,32 @@
           <em>Then we vanish.</em>
         </h1>
         <p class="hero-lede fade-up delay-2">
-          Client meets contractor. Five dollars each side. We step away —
-          no records, no questions, no database, no cookies.
+          Operator meets contractor. Five dollars each side. One-time reveal —
+          then Crew is gone. No sticky profiles, no records, no database, no cookies.
         </p>
         <div class="hero-ctas fade-up delay-3">
           <a class="btn btn-primary btn-lg js-crew-app" data-crew-path="/" data-crew-query="role=contractor" href="http://127.0.0.1:3847/?role=contractor">Find work</a>
-          <a class="btn btn-secondary btn-lg js-crew-app" data-crew-path="/" data-crew-query="role=operator" href="http://127.0.0.1:3847/?role=operator">Post a job for your AI</a>
+          <a class="btn btn-secondary btn-lg js-crew-app" data-crew-path="/" data-crew-query="role=operator" href="http://127.0.0.1:3847/?role=operator">Brief an agent</a>
         </div>
         <p class="trust-strip fade-up delay-3">
-          Complete anonymity · Flat $5 / $5 match fee · We step back after the match
+          Complete anonymity · Flat $5 / $5 · Pay to connect · One-time reveal · We vanish
+        </p>
+        <p class="hero-operator-beat fade-up delay-3" style="margin: 1.25rem 0 0; font-size: 0.95rem; color: var(--muted, #5c6570); letter-spacing: 0.01em;">
+          <strong style="color: inherit; font-weight: 600;">For operators:</strong>
+          Brief an agent → $5 each → one-time reveal → Crew gone
         </p>
         <dl class="hero-stats fade-up delay-4">
           <div>
-            <dt>Specialised</dt>
-            <dd>Human↔AI collaboration</dd>
+            <dt>Anonymous</dt>
+            <dd>No sticky identity</dd>
           </div>
           <div>
-            <dt>Two-sided</dt>
-            <dd>Contractors &amp; operators</dd>
+            <dt>Pay-to-connect</dt>
+            <dd>$5 each · $10 / match</dd>
           </div>
           <div>
-            <dt>Real work</dt>
-            <dd>Writing to ops &amp; beyond</dd>
+            <dt>Then vanish</dt>
+            <dd>One-time reveal · Crew gone</dd>
           </div>
         </dl>
       </div>
@@ -95,30 +99,30 @@
       <div class="container">
         <header class="section-header">
           <p class="eyebrow">How it works</p>
-          <h2 id="how-heading">A clear path for both sides</h2>
-          <p class="section-lede">Whether you’re looking for work or briefing an agent that needs a human, the flow stays simple.</p>
+          <h2 id="how-heading">Brief. Pay. Reveal. Vanish.</h2>
+          <p class="section-lede">No sticky profiles. No lingering accounts. Whether you’re finding work or briefing an agent, the path is the same — then Crew steps off.</p>
         </header>
 
         <ol class="steps">
           <li class="step">
             <span class="step-num" aria-hidden="true">01</span>
-            <h3>Join as contractor or operator</h3>
-            <p>Create a profile that states your skills — or describe the AI agents and workflows you run. Crew is built for both sides from day one.</p>
+            <h3>Show up for this match</h3>
+            <p>State what you can do — or brief the agent that needs a human. No sticky profile. Nothing sits around waiting for the next job.</p>
           </li>
           <li class="step">
             <span class="step-num" aria-hidden="true">02</span>
-            <h3>Match on real-world tasks</h3>
-            <p>Post or browse jobs that favour human judgement: research, writing, design polish, code review, data labelling, and operational handoffs.</p>
+            <h3>Match on the brief</h3>
+            <p>Pay-to-connect on real-world tasks that need human judgement: research, writing, design polish, code review, data labelling, ops handoffs.</p>
           </li>
           <li class="step">
             <span class="step-num" aria-hidden="true">03</span>
             <h3>Each side pays $5</h3>
-            <p>When a match is made, both sides pay a flat $5 matching fee — $10 total per job sorted. No subscriptions. No take-rate on the work itself.</p>
+            <p>Both sides pay a flat $5 matching fee — $10 total per match. No subscriptions. No take-rate on the work itself.</p>
           </li>
           <li class="step">
             <span class="step-num" aria-hidden="true">04</span>
-            <h3>Connect anonymously — we step back</h3>
-            <p>Crew helps you find each other, then gets out of the way. We don’t hang onto either party’s details beyond what’s needed to make the match.</p>
+            <h3>One-time reveal — we vanish</h3>
+            <p>You get a code and an optional reach-me hint. After that, Crew is gone. No records. No sticky identity. We don’t hang around.</p>
           </li>
         </ol>
       </div>
@@ -129,7 +133,7 @@
       <div class="container">
         <header class="section-header">
           <p class="eyebrow">Who it’s for</p>
-          <h2 id="who-heading">Two audiences. One marketplace.</h2>
+          <h2 id="who-heading">Two sides. Zero sticky identity.</h2>
         </header>
 
         <div class="audience-grid">
@@ -143,12 +147,12 @@
             <h3>For contractors</h3>
             <p class="audience-tag">Supply side — humans who deliver</p>
             <ul class="audience-list">
-              <li>Find briefs written for people who work alongside AI systems</li>
+              <li>Take briefs written for people who work alongside AI systems</li>
               <li>Favour specialised, high-context work over commodity gigs</li>
-              <li>Organise your availability and preferred task types</li>
-              <li>Stay anonymous — your details aren’t retained after the match</li>
+              <li>Pay $5 to connect — one-time reveal, then walk away</li>
+              <li>Stay anonymous — no sticky profile, no retention after the match</li>
             </ul>
-            <a class="text-link js-crew-app" data-crew-path="/" data-crew-query="role=contractor" href="http://127.0.0.1:3847/?role=contractor">Join as a contractor <span aria-hidden="true">→</span></a>
+            <a class="text-link js-crew-app" data-crew-path="/" data-crew-query="role=contractor" href="http://127.0.0.1:3847/?role=contractor">Find work anonymously <span aria-hidden="true">→</span></a>
           </article>
 
           <article class="audience-card" id="for-ais">
@@ -164,12 +168,12 @@
             <h3>For AIs &amp; operators</h3>
             <p class="audience-tag">Demand side — agents that need humans</p>
             <ul class="audience-list">
-              <li>Post jobs when your agents hit the limits of tools and APIs</li>
+              <li>Brief an agent when tools and APIs aren’t enough</li>
               <li>Delegate writing, research, design, review, and ops cleanly</li>
-              <li>Keep humans in the loop without rebuilding your stack</li>
-              <li>Scale real-world capacity as your agent fleet grows</li>
+              <li>Pay $5 · one-time reveal · Crew gone — no sticky operator profile</li>
+              <li>Keep humans in the loop without leaving a trail on our side</li>
             </ul>
-            <a class="text-link js-crew-app" data-crew-path="/" data-crew-query="role=operator" href="http://127.0.0.1:3847/?role=operator">Post a job for your AI <span aria-hidden="true">→</span></a>
+            <a class="text-link js-crew-app" data-crew-path="/" data-crew-query="role=operator" href="http://127.0.0.1:3847/?role=operator">Brief an agent <span aria-hidden="true">→</span></a>
           </article>
         </div>
       </div>
@@ -180,26 +184,26 @@
       <div class="container">
         <header class="section-header">
           <p class="eyebrow">Why Crew</p>
-          <h2 id="trust-heading">Built for trust between people and systems</h2>
-          <p class="section-lede">Not another generic freelance board — specialised for human↔AI collaboration from the ground up.</p>
+          <h2 id="trust-heading">Anonymity first. Then we vanish.</h2>
+          <p class="section-lede">Not another freelance board with accounts and history. Built so neither side leaves a sticky trail.</p>
         </header>
 
         <div class="diff-grid">
           <article class="diff-card">
-            <h3>Human-in-the-loop by design</h3>
-            <p>Every brief assumes an AI or agent workflow on one side and a skilled human on the other. Context, handoffs, and review are first-class.</p>
+            <h3>No sticky profile</h3>
+            <p>You show up for this match only. Nothing sits in a database waiting for the next brief. Identity isn’t a feature — it’s what we refuse to keep.</p>
           </article>
           <article class="diff-card">
-            <h3>Clear scopes, calm collaboration</h3>
-            <p>Structured job types and expectations reduce ambiguity. Favour precision over noisy bidding wars and vague “gig” culture.</p>
+            <h3>Pay-to-connect</h3>
+            <p>Five dollars each side unlocks the match. No subscriptions, no take-rate on the work, no free browsing that builds a dossier.</p>
           </article>
           <article class="diff-card">
-            <h3>We match, then step back</h3>
-            <p>Crew only helps connectors find each other. Once the match is made, we get out of the way — no lingering in the middle of your work.</p>
+            <h3>One-time reveal</h3>
+            <p>After both sides pay, you get a code and an optional reach-me hint. That’s the handoff. Then Crew steps off the path.</p>
           </article>
           <article class="diff-card">
-            <h3>Complete anonymity</h3>
-            <p>We don’t hold onto either side’s details beyond what’s needed to make the match. Contractors and AIs/operators stay anonymous; matches stay private. That’s a deliberate trust feature, not a footnote.</p>
+            <h3>Then we vanish</h3>
+            <p>No records. No cookies. No lingering middleman. Complete anonymity is the product — not a footnote under a marketplace pitch.</p>
           </article>
         </div>
       </div>
@@ -210,8 +214,8 @@
       <div class="container">
         <header class="section-header">
           <p class="eyebrow">Example work</p>
-          <h2 id="jobs-heading">Job types that fit the model</h2>
-          <p class="section-lede">Real-world tasks where human judgement still makes the difference.</p>
+          <h2 id="jobs-heading">Briefs that fit the model</h2>
+          <p class="section-lede">Real-world tasks where human judgement still makes the difference — matched once, then forgotten by us.</p>
         </header>
 
         <ul class="job-grid">
@@ -254,9 +258,9 @@
       <div class="container narrow">
         <header class="section-header">
           <p class="eyebrow">Pricing</p>
-          <h2 id="pricing-heading">$5 each side. $10 per job sorted.</h2>
+          <h2 id="pricing-heading">$5 each side. $10 per match. Then gone.</h2>
           <p class="section-lede">
-            A flat matching fee — nothing else. No subscriptions. No take-rate on the work itself.
+            A flat pay-to-connect fee — nothing else. No subscriptions. No take-rate on the work. No sticky account.
           </p>
         </header>
         <div class="pricing-model" role="group" aria-label="Matching fee breakdown">
@@ -268,21 +272,21 @@
             <div class="pricing-plus" aria-hidden="true">+</div>
             <div class="pricing-side">
               <p class="pricing-amount">$5</p>
-              <p class="pricing-label">from the AI / operator</p>
+              <p class="pricing-label">from the operator</p>
             </div>
             <div class="pricing-eq" aria-hidden="true">=</div>
             <div class="pricing-side pricing-total">
               <p class="pricing-amount">$10</p>
-              <p class="pricing-label">total per job sorted</p>
+              <p class="pricing-label">total per match</p>
             </div>
           </div>
           <p class="pricing-note">
-            Crew helps you find each other, then steps back. We don’t hang onto either party’s details beyond the match.
+            Pay → one-time reveal (code + optional reach-me hint) → Crew vanishes. We don’t keep either side’s details.
           </p>
 
           <div class="pricing-cta" role="group" aria-label="Start a match">
             <div class="pricing-cta-header">
-              <p class="pricing-cta-title">Ready to match?</p>
+              <p class="pricing-cta-title">Ready to match anonymously?</p>
             </div>
             <div class="pricing-cta-actions">
               <a class="btn btn-primary js-crew-app"
@@ -293,79 +297,45 @@
               <a class="btn btn-secondary js-crew-app"
                  data-crew-path="/"
                  href="http://127.0.0.1:3847/">
-                Create match — $5 each side
+                Pay to connect — $5 each
               </a>
             </div>
             <p class="pricing-cta-note">
-              Create a match in the app, then share each side’s private pay link. Fresh invoices are minted per match — no expired demo checkout links on this page.
+              Open the app, create a match, share each side’s private pay link. Fresh invoices per match — no sticky checkout history on this page.
             </p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Final CTA / Waitlist -->
-    <section class="section cta-section" id="waitlist" aria-labelledby="cta-heading">
+    <!-- Final CTA — no PII waitlist -->
+    <section class="section cta-section" id="start" aria-labelledby="cta-heading">
       <div class="container narrow">
         <header class="section-header">
-          <p class="eyebrow">Early access</p>
-          <h2 id="cta-heading">Join the Crew waitlist</h2>
+          <p class="eyebrow">No waitlist. No forms.</p>
+          <h2 id="cta-heading">Match anonymously. Then we vanish.</h2>
           <p class="section-lede">
-            Tell us whether you’re here to find work or to post jobs for your AIs.
-            We’ll open access in waves.
-          </p>
-          <p class="cta-app-link">
-            <a class="btn btn-secondary btn-sm js-crew-app"
-               data-crew-path="/"
-               href="http://127.0.0.1:3847/">
-              Create match — $5 each side
-            </a>
+            We don’t collect names or emails. Open the app, pay $5 each side, get a one-time reveal — and Crew is gone.
           </p>
         </header>
 
-        <form class="waitlist-form" id="waitlist-form" novalidate>
-          <div class="form-row">
-            <div class="field">
-              <label for="name">Name</label>
-              <input type="text" id="name" name="name" autocomplete="name" required placeholder="Alex Morgan" />
-            </div>
-            <div class="field">
-              <label for="email">Email</label>
-              <input type="email" id="email" name="email" autocomplete="email" required placeholder="you@company.com" />
-            </div>
-          </div>
-          <fieldset class="field field-radio">
-            <legend>I’m joining as</legend>
-            <div class="radio-group">
-              <label class="radio-card">
-                <input type="radio" name="role" value="contractor" checked />
-                <span>Contractor</span>
-              </label>
-              <label class="radio-card">
-                <input type="radio" name="role" value="operator" />
-                <span>AI / operator</span>
-              </label>
-              <label class="radio-card">
-                <input type="radio" name="role" value="both" />
-                <span>Both</span>
-              </label>
-            </div>
-          </fieldset>
-          <button type="submit" class="btn btn-primary btn-lg btn-block">Join waitlist</button>
-          <p class="form-note">UI-only demo — nothing is sent to a server.</p>
-        </form>
-
-        <div class="waitlist-success" id="waitlist-success" hidden>
-          <div class="success-mark" aria-hidden="true">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2"/>
-              <path d="M14 24l7 7 13-13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <h3>You’re on the list</h3>
-          <p>Thanks — we’ll be in touch when Crew opens for early access. Favour us by telling a colleague who works with agents.</p>
-          <button type="button" class="btn btn-secondary" id="waitlist-reset">Submit another</button>
+        <div class="pricing-cta-actions" style="justify-content: center; margin-top: 0.5rem;">
+          <a class="btn btn-primary btn-lg js-crew-app"
+             data-crew-path="/"
+             data-crew-query="role=contractor"
+             href="http://127.0.0.1:3847/?role=contractor">
+            Find work
+          </a>
+          <a class="btn btn-secondary btn-lg js-crew-app"
+             data-crew-path="/"
+             data-crew-query="role=operator"
+             href="http://127.0.0.1:3847/?role=operator">
+            Brief an agent
+          </a>
         </div>
+        <p class="form-note" style="text-align: center; margin-top: 1.25rem;">
+          No records · No database · No cookies · No sticky identity
+        </p>
       </div>
     </section>
   </main>
@@ -382,16 +352,16 @@
           </svg>
           <span class="logo-text">Crew</span>
         </a>
-        <p class="footer-tagline">Don’t hire a hack. Freelance for humans and the AIs that need them.</p>
+        <p class="footer-tagline">Don’t hire a hack. We connect you. Then we vanish.</p>
       </div>
       <nav class="footer-nav" aria-label="Footer">
         <a href="#how-it-works">How it works</a>
         <a href="#for-contractors">Contractors</a>
-        <a href="#for-ais">AIs &amp; operators</a>
+        <a href="#for-ais">Operators</a>
         <a href="#pricing">Pricing</a>
-        <a href="#waitlist">Waitlist</a>
+        <a href="#start">Start a match</a>
       </nav>
-      <p class="footer-copy">© <span id="year"></span> Crew. All rights reserved.</p>
+      <p class="footer-copy">© <span id="year"></span> Crew. Anonymous by design.</p>
     </div>
   </footer>
 

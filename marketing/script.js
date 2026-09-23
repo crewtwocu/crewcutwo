@@ -62,37 +62,6 @@
     });
   }
 
-  // Waitlist form (UI-only)
-  var form = document.getElementById("waitlist-form");
-  var success = document.getElementById("waitlist-success");
-  var resetBtn = document.getElementById("waitlist-reset");
-
-  if (form && success) {
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-
-      if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-      }
-
-      form.hidden = true;
-      success.hidden = false;
-      success.focus && success.setAttribute("tabindex", "-1");
-      success.focus();
-    });
-  }
-
-  if (resetBtn && form && success) {
-    resetBtn.addEventListener("click", function () {
-      form.reset();
-      success.hidden = true;
-      form.hidden = false;
-      var nameInput = document.getElementById("name");
-      if (nameInput) nameInput.focus();
-    });
-  }
-
   // Subtle header elevation on scroll
   var header = document.querySelector(".site-header");
   if (header) {

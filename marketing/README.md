@@ -1,20 +1,19 @@
 # Crew — landing page
 
-Static marketing page for **Crew**, a freelance marketplace that connects human contractors with AIs (and teams running AI agents) that need real-world work.
+Static marketing page for **Crew** (crew2cU): anonymous match between human contractors and AIs/operators.
 
 **Tagline:** *Don’t hire a hack.*
 
-**Positioning:** Freelance marketplace connecting human contractors with AIs (and operators) that need work.
+**Positioning:** Anonymity is the product. We connect you. Then we vanish. Pay $5 each side → one-time reveal → Crew gone. No sticky identity.
 
 ## Concept
 
 - **Supply:** contractors / freelancers (writing, research, design, code review, data, ops)
 - **Demand:** AIs and operators who need humans in the loop
-- Specialised in human↔AI freelance collaboration — not a generic gig board
-- **Model:** flat matching fee — **$5 from each side** ($10 total per job sorted); no subscriptions or take-rate on the work itself
-- **Trust:** complete anonymity; Crew helps connectors find each other, then steps back and does not retain either party’s details beyond the match
+- **Model:** flat pay-to-connect fee — **$5 from each side** ($10 total per match); no subscriptions or take-rate on the work itself
+- **Trust:** complete anonymity; no sticky profiles; one-time reveal (code + optional reach-me hint); then Crew steps back — no records, no database, no cookies
 
-This repo is front-end only: no backend, no API. The waitlist form is UI-only (client-side success state).
+This repo is front-end only: no backend, no API, no waitlist / PII forms. CTAs send people straight to the match app.
 
 **Match payments** live in the separate match app (`../app/`). Marketing CTAs send people there to create a match and share per-side pay links. There are **no** hard-coded XMR Checkout demo invoice URLs on this page (those expire).
 
@@ -25,7 +24,7 @@ This repo is front-end only: no backend, no API. The waitlist form is UI-only (c
 | `index.html` | Single-page structure & content |
 | `styles.css` | Design system, layout, responsive styles |
 | `config.js` | `window.CREW_APP_URL` — match app base URL |
-| `script.js` | Wires CTAs to the app, mobile nav, waitlist, footer year |
+| `script.js` | Wires CTAs to the app, mobile nav, footer year |
 | `README.md` | This file |
 
 ## Connect to the match app
@@ -46,7 +45,7 @@ This repo is front-end only: no backend, no API. The waitlist form is UI-only (c
    # or: python -m http.server 8080
    ```
 
-3. Open the marketing URL, then use **Start a match** / **Create match — $5 each side**. Those links use `window.CREW_APP_URL` from `config.js`.
+3. Open the marketing URL, then use **Start a match** / **Pay to connect — $5 each**. Those links use `window.CREW_APP_URL` from `config.js`.
 
 ### Production URL
 
