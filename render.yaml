@@ -13,7 +13,6 @@ services:
     runtime: docker
     plan: free
     region: oregon
-    rootDir: app
     dockerfilePath: ./app/Dockerfile
     dockerContext: ./app
     healthCheckPath: /health
