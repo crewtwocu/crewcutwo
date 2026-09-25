@@ -100,6 +100,8 @@ Manual expiry check (if not using dry-run step 6): create a match, backdate `inv
 
 `POST /api/matches` (and HTML `POST /create`) are limited to **~10 creates per IP per 10 minutes** (in-memory Map). Over limit → **429** JSON `{ "error": "rate_limit", ... }`.
 
+`POST /api/contact` is limited to **~5 requests per IP per 15 minutes** (separate in-memory Map). Over limit → **429** `{ "ok": false, "requestId" }`.
+
 ## Env
 
 Copy `.env.example` → `.env`. Leave `XMRCHECKOUT_API_KEY` unset for mock mode.
@@ -118,6 +120,10 @@ If present on this box, secrets may load from `/workspace/crew-lolipop/xmrchecko
 | `XMRCHECKOUT_STORE_ID` | Store id (reserved) |
 | `ALLOW_MOCK_PAY` | If API key set, must be `true` to keep mock pay |
 | `CREW_MOCK_ONLY` | Skip shared secrets file |
+| `CREW_CONTACT_OPS_EMAIL` | Ops inbox for one-shot contact notifications |
+| `CREW_CONTACT_OPS_PHONE` | Ops phone for Twilio callback SMS (optional) |
+| `CREW_SMTP_*` | SMTP host/port/user/pass/from for contact email |
+| `TWILIO_*` | Twilio SID/token/from for callback SMS |
 
 ## XMR Checkout adapter
 
@@ -134,6 +140,7 @@ When no API key: mock invoices with `/mock-pay/:invoiceId`.
 ## API
 
 - `GET /health`
+- `POST /api/contact` — privacy-preserving one-shot **email me back / request a callback**. Body: `{ "method": "email"|"callback", "contact": string, "note"?: string, "website"?: string }` (`website` = honeypot). Sends **one** outbound message to ops (SMTP email, or Twilio SMS / email-to-ops for callbacks), then **discards** the payload — **no SQLite / CRM write**. Logs only `{ ts, event, requestId, result }` (never email/phone/note/body). Honeypot filled → success-looking response, no send. Fail-closed after in-memory retries. Rate-limited per IP. Response: `{ ok, requestId }` (never echoes contact). When SMTP/Twilio unset, uses a console **stub** transport (still no PII in logs).
 - `POST /api/matches` — `{ "summary"?: string, "jobBrief"?: string, "handoffHint"?: string }` (hint max ~500 chars) → `{ id, expiresAt, invoices, shareUrls: { contractor, operator, hub } }` (429 if rate-limited)
 - `GET /api/matches/:id` — status + `expiresAt` + `jobBriefPresent`; before both paid, `jobBrief`/`summary` are null. When both paid, includes `connection` during grace (`code`, `note`, `jobBrief`, `handoffHint`, `steps`); secrets wiped after `reveal_until`. May return `expired` / `cancelled`. Live mode: syncs confirmed invoices on each GET (mock invoices never hit the public API).
 - `GET /api/matches/:id?side=contractor|operator` — same, plus `side` / `yourPayUrl` emphasis (full invoices still returned)
@@ -144,7 +151,7 @@ When no API key: mock invoices with `/mock-pay/:invoiceId`.
 
 ### HTML routes
 
-- `GET /` — create form
+- `GET /` — create form + **Get a reply** contact component (`/#get-a-reply`)
 - `POST /create` — creates match, shows copyable side share URLs
 - `GET /m/:id` — hub (both share links + live status + cancel)
 - `GET /m/:id/contractor` · `GET /m/:id/operator` — per-side pay + live status
@@ -187,6 +194,16 @@ curl -s -X POST "$BASE/api/matches" -H 'Content-Type: application/json' -d '{}' 
 MATCH2=$(node -pe 'JSON.parse(require("fs").readFileSync("/tmp/m2.json","utf8")).id')
 curl -s -X POST "$BASE/api/matches/$MATCH2/cancel"
 ```
+
+## Contact / Get-a-reply (privacy)
+
+```bash
+# With app running (stub outbound if SMTP unset):
+curl -s -X POST http://127.0.0.1:3847/api/contact   -H 'Content-Type: application/json'   -d '{"method":"email","contact":"you@example.com","note":"quick question","website":""}'
+# → {"ok":true,"requestId":"…"}  — check server log for {"event":"contact","result":"sent",…} with no PII
+```
+
+Do **not** log request bodies for `/api/contact` at the reverse proxy / access-log layer. The handler redacts `req.body` contact fields after processing.
 
 ## Done criteria
 

@@ -7,6 +7,8 @@ import { fileURLToPath } from "url";
 import { createMatch, getMatchStatus, markInvoicePaid, cancelMatch, normaliseHandoffHint } from "./matches.js";
 import { db, applyExpiryIfNeeded, matchExpiresAt, type MatchStatus } from "./db.js";
 import { isLiveMode, mockPayAllowed, fetchPublicInvoiceStatus, isConfirmedStatus } from "./xmrcheckout.js";
+import { randomUUID } from "node:crypto";
+import { handleContactRequest, redactContactBody } from "./contact.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -107,11 +109,108 @@ const pageShell = (title: string, body: string, extraHead = "") => `<!DOCTYPE ht
   <footer class="site-footer">
     <div class="wrap footer-inner">
       <p class="footer-tagline">Don’t hire a hack. We connect you. Then we vanish.</p>
-      <p class="footer-meta"><a href="${MARKETING_URL}">How Crew works</a> · Anonymous by design</p>
+      <p class="footer-meta"><a href="${MARKETING_URL}">How Crew works</a> · <a href="/#get-a-reply">Get a reply</a> · Anonymous by design</p>
     </div>
   </footer>
 </body>
 </html>`;
+
+
+/** Client script for privacy-preserving Get-a-reply form (no analytics of address). */
+function contactFormScript(): string {
+  return `<script>
+(function () {
+  var form = document.getElementById("contact-form");
+  if (!form) return;
+  var emailField = form.querySelector("[data-contact-email]");
+  var phoneField = form.querySelector("[data-contact-phone]");
+  var emailInput = document.getElementById("contact-email");
+  var phoneInput = document.getElementById("contact-phone");
+  var noteInput = document.getElementById("contact-note");
+  var websiteInput = document.getElementById("contact-website");
+  var statusEl = document.getElementById("contact-status");
+  var submitBtn = document.getElementById("contact-submit");
+
+  function method() {
+    var checked = form.querySelector('input[name="method"]:checked');
+    return checked ? checked.value : "email";
+  }
+
+  function syncFields() {
+    var m = method();
+    var isEmail = m === "email";
+    if (emailField) emailField.hidden = !isEmail;
+    if (phoneField) phoneField.hidden = isEmail;
+    if (emailInput) emailInput.required = isEmail;
+    if (phoneInput) phoneInput.required = !isEmail;
+  }
+
+  form.querySelectorAll('input[name="method"]').forEach(function (el) {
+    el.addEventListener("change", syncFields);
+  });
+  syncFields();
+
+  function showStatus(text, ok) {
+    if (!statusEl) return;
+    statusEl.hidden = false;
+    statusEl.textContent = text;
+    statusEl.classList.toggle("ok", !!ok);
+    statusEl.classList.toggle("warn", !ok);
+  }
+
+  form.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var m = method();
+    var contact = m === "email"
+      ? (emailInput && emailInput.value ? emailInput.value.trim() : "")
+      : (phoneInput && phoneInput.value ? phoneInput.value.trim() : "");
+    var note = noteInput && noteInput.value ? noteInput.value.trim() : "";
+    var website = websiteInput && websiteInput.value ? websiteInput.value : "";
+
+    if (!contact) {
+      showStatus(m === "email" ? "Enter an email address." : "Enter a phone number.", false);
+      return;
+    }
+
+    if (submitBtn) submitBtn.disabled = true;
+    showStatus("Sending…", true);
+
+    fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({
+        method: m,
+        contact: contact,
+        note: note,
+        website: website
+      })
+    })
+      .then(function (r) {
+        return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
+      })
+      .then(function (res) {
+        if (res.ok && res.j && res.j.ok) {
+          showStatus("Sent. We’ll be in touch.", true);
+          form.reset();
+          syncFields();
+          return;
+        }
+        if (res.status === 429) {
+          showStatus("Too many requests. Try again later.", false);
+          return;
+        }
+        showStatus("Couldn’t send just now. Try again shortly.", false);
+      })
+      .catch(function () {
+        showStatus("Couldn’t send just now. Try again shortly.", false);
+      })
+      .finally(function () {
+        if (submitBtn) submitBtn.disabled = false;
+      });
+  });
+})();
+</script>`;
+}
 
 /** Client poll script: polls GET /api/matches/:id until ready/consumed/expired/cancelled. */
 function pollScript(matchId: string, side?: "contractor" | "operator"): string {
@@ -295,6 +394,33 @@ app.get("/health", (_req, res) => {
     live: isLiveMode(),
     mockPay: mockPayAllowed(),
   });
+});
+
+/**
+ * Privacy-preserving one-shot contact / callback.
+ * No DB write. Logs only {ts, event, requestId, result} — never email/phone/note/body.
+ * Access logs: do not log request bodies for this route (see DEPLOY.md / README).
+ * Body fields are redacted in-memory after handling.
+ */
+app.post("/api/contact", async (req, res) => {
+  const ip = clientIp(req);
+  try {
+    const result = await handleContactRequest(req.body || {}, ip);
+    redactContactBody(req.body);
+    res.status(result.httpStatus).json(result.body);
+  } catch {
+    redactContactBody(req.body);
+    const requestId = randomUUID();
+    console.log(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        event: "contact",
+        requestId,
+        result: "failed",
+      })
+    );
+    res.status(503).json({ ok: false, requestId });
+  }
 });
 
 app.post("/api/matches", async (req, res) => {
@@ -505,8 +631,43 @@ app.get("/", (req, res) => {
       </div>
       <button type="submit">${escapeHtml(submitLabel)}</button>
     </form>
+    <section class="card contact-card" id="get-a-reply" aria-labelledby="contact-heading">
+      <h2 id="contact-heading">Get a reply</h2>
+      <p class="muted contact-lede">Prefer a human? Ask Crew to email you back or call you once. One message — nothing sticky.</p>
+      <form id="contact-form" class="contact-form" novalidate>
+        <fieldset class="contact-method">
+          <legend class="sr-only">How should we reach you?</legend>
+          <label class="choice">
+            <input type="radio" name="method" value="email" checked />
+            <span>Email me back</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="method" value="callback" />
+            <span>Request a callback</span>
+          </label>
+        </fieldset>
+        <div class="field" data-contact-email>
+          <label for="contact-email">Email</label>
+          <input id="contact-email" name="email" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com" />
+        </div>
+        <div class="field" data-contact-phone hidden>
+          <label for="contact-phone">Phone</label>
+          <input id="contact-phone" name="phone" type="tel" autocomplete="tel" maxlength="20" placeholder="+61 …" />
+        </div>
+        <div class="field">
+          <label for="contact-note">Note <span class="muted">(optional, one line)</span></label>
+          <input id="contact-note" name="note" type="text" maxlength="200" autocomplete="off" placeholder="What is this about?" />
+        </div>
+        <div class="hp-field" aria-hidden="true">
+          <label for="contact-website">Website</label>
+          <input id="contact-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+        <button type="submit" id="contact-submit">Send</button>
+        <p id="contact-status" class="contact-status" role="status" hidden></p>
+      </form>
+    </section>
     <p class="page-nav muted">Invoices expire after ~1 hour if unpaid. <a href="${MARKETING_URL}">Learn how Crew works →</a></p>
-  `
+  ` + contactFormScript()
     )
   );
 });
