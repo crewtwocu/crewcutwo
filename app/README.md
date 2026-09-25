@@ -1,6 +1,6 @@
 # Crew app — match + payments MVP
 
-Functional MVP: create a match, collect **$5 from each side** (contractor + operator), then reveal a **one-time connection code** once. After reveal, the secret, any job brief / summary, and optional **handoff hint** are cleared from SQLite (anonymity).
+Functional MVP: create a match, collect **$5 from each side** (contractor + operator), then reveal a **connection code** (plus job brief + optional handoff hint) to both parties during a short grace window. After the grace window ends, secrets are cleared from SQLite (anonymity).
 
 Marketing site lives at `../marketing/` (not rebuilt here).
 
@@ -76,14 +76,14 @@ Dry-run outside Docker is unchanged: `npm run dry-run` / `CREW_MOCK_ONLY=1 npm r
    - `/m/:id/operator` — operator pay button + status
 3. Hub `/m/:id` lists both links and overall status (no need for both parties to open it).
 4. Side pages and hub **poll** `GET /api/matches/:id` every ~3s until status is `ready`, `consumed`, `expired`, or `cancelled`. In **live** mode that GET also syncs confirmed XMR Checkout invoices (pending non-`mock_` ids via public poll) before returning status — so the UI notices real payments without calling `POST /api/dev/poll/:invoiceId`.
-5. When both have paid, the first successful status fetch reveals the connection once (code + optional handoff hint + steps); brief/summary/secret/hint are wiped.
+5. When both have paid, status GETs during a **grace window** (default ~15 minutes, `REVEAL_GRACE_SECONDS`) return `connection` with `code`, `jobBrief`, optional `handoffHint`, and `steps` — so hub + both side pages can all succeed. After grace, secrets are wiped. Before both pay, `jobBrief` / `summary` are redacted (`jobBriefPresent` only).
 
 Browser try:
 
 1. `CREW_MOCK_ONLY=1 npm run dev`
 2. Open http://localhost:3847 → Create match → copy the two side links
 3. Open each side link (two tabs), mock-pay $5 on each
-4. Watch either page: status updates, then the connection code appears once
+4. Watch either page: status updates, then the connection code + brief appear (both sides can refresh during grace)
 
 ## Expiry + cancel
 
@@ -111,6 +111,7 @@ If present on this box, secrets may load from `/workspace/crew-lolipop/xmrchecko
 | `PORT` | Default `3847` |
 | `PUBLIC_BASE_URL` | Base for mock pay + share URLs |
 | `INVOICE_TTL_SECONDS` | Invoice / match pay-window length (default `3600`) |
+| `REVEAL_GRACE_SECONDS` | How long both parties can re-fetch connection after first reveal (default `900`, min `30`) |
 | `XMRCHECKOUT_API_KEY` | Live mode when set |
 | `XMRCHECKOUT_BASE_URL` | Default `https://xmrcheckout.com/api/core` |
 | `XMRCHECKOUT_WEBHOOK_SECRET` / `WEBHOOK_SECRET` | Optional webhook auth |
@@ -134,7 +135,7 @@ When no API key: mock invoices with `/mock-pay/:invoiceId`.
 
 - `GET /health`
 - `POST /api/matches` — `{ "summary"?: string, "jobBrief"?: string, "handoffHint"?: string }` (hint max ~500 chars) → `{ id, expiresAt, invoices, shareUrls: { contractor, operator, hub } }` (429 if rate-limited)
-- `GET /api/matches/:id` — status + `expiresAt`; includes `connection` **once** when both paid (`code`, `note`, `handoffHint`, `steps`); clears brief/summary/hint/secret on reveal; may return `expired` / `cancelled`. Live mode: syncs confirmed invoices on each GET (mock invoices never hit the public API).
+- `GET /api/matches/:id` — status + `expiresAt` + `jobBriefPresent`; before both paid, `jobBrief`/`summary` are null. When both paid, includes `connection` during grace (`code`, `note`, `jobBrief`, `handoffHint`, `steps`); secrets wiped after `reveal_until`. May return `expired` / `cancelled`. Live mode: syncs confirmed invoices on each GET (mock invoices never hit the public API).
 - `GET /api/matches/:id?side=contractor|operator` — same, plus `side` / `yourPayUrl` emphasis (full invoices still returned)
 - `POST /api/matches/:id/cancel` — cancel open match → `{ ok, id, status: "cancelled" }` (409 if not cancellable)
 - `POST /api/dev/pay/:invoiceId` — mock mark paid (404/disabled when live key set and `ALLOW_MOCK_PAY` not true; 409 if match expired/cancelled)
@@ -175,11 +176,11 @@ INV2=$(node -pe 'JSON.parse(require("fs").readFileSync("/tmp/m.json","utf8")).in
 curl -s -X POST "$BASE/api/dev/pay/$INV1"
 curl -s -X POST "$BASE/api/dev/pay/$INV2"
 
-# First reveal — prints connection; brief cleared
-curl -s "$BASE/api/matches/$MATCH"
+# First reveal (either side) — connection + jobBrief during grace
+curl -s "$BASE/api/matches/$MATCH?side=contractor"
 
-# Second — consumed, no connection
-curl -s "$BASE/api/matches/$MATCH"
+# Second side / hub — same connection while grace active
+curl -s "$BASE/api/matches/$MATCH?side=operator"
 
 # Cancel another open match
 curl -s -X POST "$BASE/api/matches" -H 'Content-Type: application/json' -d '{}' | tee /tmp/m2.json
@@ -189,4 +190,4 @@ curl -s -X POST "$BASE/api/matches/$MATCH2/cancel"
 
 ## Done criteria
 
-`scripts/dry-run.sh` exits 0: share URLs, one-time reveal (incl. handoff hint) + brief/hint wipe, cancel, and expiry (via backdated `expires_at`) all assert green.
+`scripts/dry-run.sh` exits 0: share URLs, pre-pay brief redact, dual-party grace reveal (incl. `connection.jobBrief` + handoff hint), post-grace wipe, cancel, and expiry (via backdated `expires_at`) all assert green.

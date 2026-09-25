@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Full mock flow: create match → pay both → reveal connection once → second fetch consumed
-# Also: cancel, expiry (DB backdate), shareUrls + jobBrief/handoffHint cleared after reveal.
+# Full mock flow: create match → pay both → dual-party grace reveal → wipe after grace
+# Also: pre-pay brief redact, cancel, expiry (DB backdate), shareUrls.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -81,42 +81,98 @@ curl -sf "$BASE/m/$MATCH_ID/operator" | grep -q "Operator page"
 curl -sf "$BASE/m/$MATCH_ID" | grep -q "Match hub"
 echo "side + hub HTML ok"
 
-echo "=== 2) Mock pay both ==="
+echo "=== 2) Pre-pay: brief redacted on GET ==="
+PRE=$(curl -sf "$BASE/api/matches/$MATCH_ID")
+echo "$PRE" | tee /tmp/crew-pre.json
+node -e '
+const j=JSON.parse(require("fs").readFileSync("/tmp/crew-pre.json","utf8"));
+if(j.jobBrief!=null){console.error("jobBrief must be redacted pre-pay", j); process.exit(1)}
+if(j.summary!=null){console.error("summary must be redacted pre-pay", j); process.exit(1)}
+if(j.jobBriefPresent!==true){console.error("expected jobBriefPresent true", j); process.exit(1)}
+console.log("pre-pay redact ok (jobBriefPresent=true)");
+'
+
+echo "=== 3) Mock pay both ==="
 curl -sf -X POST "$BASE/api/dev/pay/$INV1" | tee /tmp/crew-pay1.json
 echo
 curl -sf -X POST "$BASE/api/dev/pay/$INV2" | tee /tmp/crew-pay2.json
 echo
 
-echo "=== 3) First reveal (expect connection + brief cleared in response) ==="
-FIRST=$(curl -sf "$BASE/api/matches/$MATCH_ID")
+echo "=== 4) First reveal (contractor) — connection + jobBrief in payload ==="
+FIRST=$(curl -sf "$BASE/api/matches/$MATCH_ID?side=contractor")
 echo "$FIRST" | tee /tmp/crew-first.json
 CODE=$(node -e '
 const j=JSON.parse(require("fs").readFileSync("/tmp/crew-first.json","utf8"));
 if(!j.connection||!j.connection.code){console.error("missing connection on first reveal", j); process.exit(1)}
-if(j.summary!=null||j.jobBrief!=null){console.error("summary/jobBrief should be cleared on reveal", j); process.exit(1)}
+if(j.summary!=null||j.jobBrief!=null){console.error("top-level summary/jobBrief should stay null", j); process.exit(1)}
+if(j.connection.jobBrief!=="secret brief for dry-run"){console.error("missing/wrong connection.jobBrief", j.connection); process.exit(1)}
 if(j.connection.handoffHint!=="SimpleX: dry-run-contact-link"){console.error("missing/wrong handoffHint on first reveal", j.connection); process.exit(1)}
 if(!Array.isArray(j.connection.steps)||j.connection.steps.length<3){console.error("missing steps on first reveal", j.connection); process.exit(1)}
+if(j.status!=="consumed"){console.error("expected consumed after reveal", j); process.exit(1)}
 console.log(j.connection.code)
 ')
 echo "CONNECTION_CODE=$CODE"
 
-echo "=== 3b) DB brief + handoff hint cleared ==="
+echo "=== 4b) During grace: secrets still in DB ==="
+node -e '
+const Database=require("better-sqlite3");
+const db=new Database(process.env.DB_PATH);
+const row=db.prepare("SELECT summary, job_brief, handoff_hint, connection_code, status, reveal_until FROM matches WHERE id=?").get(process.argv[1]);
+if(!row){console.error("match missing"); process.exit(1)}
+if(!row.connection_code||!row.job_brief||!row.handoff_hint){console.error("expected secrets retained during grace", row); process.exit(1)}
+if(row.status!=="consumed"){console.error("expected consumed", row); process.exit(1)}
+if(!row.reveal_until||new Date(row.reveal_until).getTime()<=Date.now()){console.error("expected future reveal_until", row); process.exit(1)}
+console.log("grace retain ok, reveal_until=", row.reveal_until);
+' "$MATCH_ID"
+
+echo "=== 5) Second fetch (operator) — same connection during grace ==="
+SECOND=$(curl -sf "$BASE/api/matches/$MATCH_ID?side=operator")
+echo "$SECOND" | tee /tmp/crew-second.json
+node -e '
+const first=JSON.parse(require("fs").readFileSync("/tmp/crew-first.json","utf8"));
+const j=JSON.parse(require("fs").readFileSync("/tmp/crew-second.json","utf8"));
+if(!j.connection||!j.connection.code){console.error("missing connection on second (grace) reveal", j); process.exit(1)}
+if(j.connection.code!==first.connection.code){console.error("code mismatch", first.connection.code, j.connection.code); process.exit(1)}
+if(j.connection.jobBrief!=="secret brief for dry-run"){console.error("missing jobBrief on second reveal", j.connection); process.exit(1)}
+if(j.status!=="consumed"){console.error("expected consumed", j); process.exit(1)}
+console.log("dual-party grace reveal ok");
+'
+
+echo "=== 5b) Hub fetch also gets connection during grace ==="
+HUB=$(curl -sf "$BASE/api/matches/$MATCH_ID")
+node -e '
+const first=JSON.parse(require("fs").readFileSync("/tmp/crew-first.json","utf8"));
+const j=JSON.parse(process.argv[1]);
+if(!j.connection||j.connection.code!==first.connection.code){console.error("hub missing connection during grace", j); process.exit(1)}
+console.log("hub grace reveal ok");
+' "$HUB"
+
+echo "=== 5c) After grace (backdate reveal_until) — wiped ==="
+node -e '
+const Database=require("better-sqlite3");
+const db=new Database(process.env.DB_PATH);
+const past=new Date(Date.now()-1000).toISOString();
+db.prepare("UPDATE matches SET reveal_until=? WHERE id=?").run(past, process.argv[1]);
+console.log("backdated reveal_until to", past);
+' "$MATCH_ID"
+THIRD=$(curl -sf "$BASE/api/matches/$MATCH_ID")
+echo "$THIRD" | tee /tmp/crew-third.json
+node -e '
+const j=JSON.parse(require("fs").readFileSync("/tmp/crew-third.json","utf8"));
+if(j.connection){console.error("connection still present after grace", j); process.exit(1)}
+if(j.status!=="consumed"){console.error("expected consumed", j); process.exit(1)}
+if(j.jobBriefPresent!==false){console.error("expected jobBriefPresent false after wipe", j); process.exit(1)}
+console.log("post-grace wipe ok");
+'
 node -e '
 const Database=require("better-sqlite3");
 const db=new Database(process.env.DB_PATH);
 const row=db.prepare("SELECT summary, job_brief, handoff_hint, connection_code, status FROM matches WHERE id=?").get(process.argv[1]);
-if(!row){console.error("match missing"); process.exit(1)}
-if(row.summary!=null||row.job_brief!=null||row.handoff_hint!=null||row.connection_code!=null){console.error("DB still has sensitive fields", row); process.exit(1)}
-if(row.status!=="consumed"){console.error("expected consumed", row); process.exit(1)}
-console.log("DB cleared ok (incl. handoff_hint)");
+if(row.summary!=null||row.job_brief!=null||row.handoff_hint!=null||row.connection_code!=null){console.error("DB still has sensitive fields after grace", row); process.exit(1)}
+console.log("DB cleared ok after grace");
 ' "$MATCH_ID"
 
-echo "=== 4) Second fetch (expect consumed, no connection) ==="
-SECOND=$(curl -sf "$BASE/api/matches/$MATCH_ID")
-echo "$SECOND" | tee /tmp/crew-second.json
-node -e 'const j=JSON.parse(require("fs").readFileSync("/tmp/crew-second.json","utf8")); if(j.connection){console.error("connection still present", j); process.exit(1)} if(j.status!=="consumed"){console.error("expected consumed", j); process.exit(1)} console.log("status=consumed ok")'
-
-echo "=== 5) Cancel match (open match) ==="
+echo "=== 6) Cancel match (open match) ==="
 CREATE2=$(curl -sf -X POST "$BASE/api/matches" \
   -H 'Content-Type: application/json' \
   -d '{"summary":"cancel-me"}')
@@ -145,7 +201,7 @@ if [[ "$HTTP_C" != "409" ]]; then
 fi
 echo "mock-pay refused on cancelled (409) ok"
 
-echo "=== 6) Expiry (backdate expires_at) ==="
+echo "=== 7) Expiry (backdate expires_at) ==="
 CREATE3=$(curl -sf -X POST "$BASE/api/matches" \
   -H 'Content-Type: application/json' \
   -d '{"summary":"expire-me"}')
@@ -186,4 +242,4 @@ fi
 echo "cancel refused on consumed (409) ok"
 
 echo
-echo "DRY-RUN OK — connection on first reveal only: $CODE"
+echo "DRY-RUN OK — dual-party grace reveal + wipe: $CODE"
