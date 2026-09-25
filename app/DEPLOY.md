@@ -24,6 +24,10 @@ Set these on the host / Origin secrets (never bake keys into the image):
 | `ALLOW_MOCK_PAY` | Leave unset/`false` in prod |
 | `PORT` | Usually `3847` (Compose maps it) |
 | `INVOICE_TTL_SECONDS` | Optional; default `3600` |
+| `CREW_CONTACT_OPS_EMAIL` | Ops inbox for one-shot Get-a-reply notifications (optional; stub if unset) |
+| `CREW_CONTACT_OPS_PHONE` | Ops phone for Twilio callback SMS (optional) |
+| `CREW_SMTP_HOST` / `CREW_SMTP_PORT` / `CREW_SMTP_USER` / `CREW_SMTP_PASS` / `CREW_SMTP_FROM` | SMTP for contact email (optional) |
+| `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM_NUMBER` | Twilio SMS for callbacks (optional; else email-to-ops / stub) |
 
 Copy `.env.example` → `.env` locally only for Compose substitution; do not commit `.env`.
 
@@ -57,7 +61,11 @@ Match-only: `docker compose up --build match`.
 - XMR Checkout **webhooks** need a **public HTTPS** URL hitting `POST /api/webhooks/xmrcheckout`.
 - Until that is wired, **poll-on-GET is fine**: live mode syncs confirmed invoices inside `GET /api/matches/:id` (and side/hub pages already poll every ~3s).
 
-## 6. Checklist
+## 6. Contact route privacy
+
+`POST /api/contact` never writes visitor email/phone/note to SQLite. App logs only timestamp, `requestId`, and `sent`|`failed`. **Strip request bodies** for this path in any reverse-proxy / CDN access logs (do not enable body logging). The handler also redacts `req.body` fields after handling.
+
+## 7. Checklist
 
 1. Claim namespace (`crew` → else `crew2cU`)
 2. Push / connect repo to Origin (or your host)

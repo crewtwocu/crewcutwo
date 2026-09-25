@@ -521,3 +521,96 @@ code {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* —— Get a reply / contact (privacy-preserving) —— */
+.contact-card {
+  margin-top: 1.75rem;
+}
+.contact-card h2 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-serif);
+  font-size: 1.65rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.contact-lede {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+.contact-method {
+  border: 0;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.25rem;
+}
+.contact-method .choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.contact-method input[type="radio"] {
+  accent-color: var(--accent);
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+}
+.contact-status {
+  margin: 0.85rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+.contact-status[hidden] {
+  display: none;
+}
+
+/* Honeypot: off-screen, not display:none (bots still fill it) */
+.hp-field {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+input[type="email"],
+input[type="tel"] {
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius);
+  margin-bottom: 0;
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+input[type="email"]:focus,
+input[type="tel"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  background: var(--white);
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
