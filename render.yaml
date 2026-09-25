@@ -1,9 +1,8 @@
-# Render Blueprint — Crew match app (Docker + ephemeral SQLite)
+# Render Blueprint — Crew match app (Docker + persistent SQLite on Starter)
 # Deploy: https://dashboard.render.com/blueprints → New Blueprint Instance
 # Or: https://render.com/deploy?repo=https://github.com/crewtwocu/crewcutwo
 #
-# Free deploy now: it sleeps when idle and has no persistent filesystem.
-# Upgrade to Starter with a disk on Friday for durable SQLite storage.
+# Starter + disk: always-on, SQLite at /app/data persists across deploys.
 # After first sync: set sync:false secrets in the dashboard, then set
 # PUBLIC_BASE_URL to the service https URL (no trailing slash).
 
@@ -11,20 +10,22 @@ services:
   - type: web
     name: crewcutwo
     runtime: docker
-    plan: free
+    plan: starter
     region: oregon
     dockerfilePath: ./app/Dockerfile
     dockerContext: ./app
     healthCheckPath: /health
     numInstances: 1
+    disk:
+      name: crew-data
+      mountPath: /app/data
+      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
       - key: CREW_MOCK_ONLY
         value: "0"
       - key: DB_PATH
-        # Free web services have ephemeral filesystems; SQLite resets on restart,
-        # spin-down, or deploy. Add a disk after upgrading to Starter.
         value: /app/data/crew.db
       # Render injects PORT; app listens on process.env.PORT
       - key: PUBLIC_BASE_URL
