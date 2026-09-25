@@ -167,10 +167,20 @@ export async function getMatchStatus(matchId: string, side?: Side | string | nul
 
   const expiresAt = matchExpiresAt(matchId);
 
+  // Re-read after possible live sync / expiry for reveal_until + secrets
+  const fresh = db.prepare("SELECT * FROM matches WHERE id = ?").get(matchId) as MatchRow;
+  const briefOnFile = Boolean(fresh.job_brief);
+  const inRevealGrace =
+    Boolean(fresh.connection_code) &&
+    Boolean(fresh.reveal_until) &&
+    new Date(fresh.reveal_until!).getTime() > Date.now() &&
+    (fresh.status === "consumed" || Boolean(fresh.consumed_at) || status === "ready");
+
   const payload: {
     id: string;
     summary: string | null;
     jobBrief: string | null;
+    jobBriefPresent: boolean;
     status: MatchStatus;
     expiresAt: string | null;
     invoices: Array<{
@@ -186,6 +196,7 @@ export async function getMatchStatus(matchId: string, side?: Side | string | nul
       code: string;
       note: string;
       handoffHint: string | null;
+      jobBrief: string | null;
       steps: string[];
     };
     side?: Side;
@@ -196,9 +207,11 @@ export async function getMatchStatus(matchId: string, side?: Side | string | nul
       hub: string;
     };
   } = {
-    id: match.id,
-    summary: match.summary,
-    jobBrief: match.job_brief ?? null,
+    id: fresh.id,
+    // Never expose brief/summary over API until reveal payload
+    summary: null,
+    jobBrief: null,
+    jobBriefPresent: briefOnFile,
     status,
     expiresAt,
     invoices: invoices.map((i) => ({
@@ -211,9 +224,9 @@ export async function getMatchStatus(matchId: string, side?: Side | string | nul
       expiresAt: i.expires_at,
     })),
     shareUrls: {
-      contractor: `${publicBase()}/m/${match.id}/contractor`,
-      operator: `${publicBase()}/m/${match.id}/operator`,
-      hub: `${publicBase()}/m/${match.id}`,
+      contractor: `${publicBase()}/m/${fresh.id}/contractor`,
+      operator: `${publicBase()}/m/${fresh.id}/operator`,
+      hub: `${publicBase()}/m/${fresh.id}`,
     },
   };
 
@@ -223,19 +236,25 @@ export async function getMatchStatus(matchId: string, side?: Side | string | nul
     payload.yourPayUrl = mine?.pay_url ?? null;
   }
 
-  if (status === "ready") {
+  // ready → first reveal; in-grace → re-fetch; past grace with secrets → wipe via revealConnection
+  const shouldTouchReveal =
+    status === "ready" ||
+    inRevealGrace ||
+    (Boolean(fresh.connection_code) &&
+      (fresh.status === "consumed" || Boolean(fresh.consumed_at)));
+
+  if (shouldTouchReveal) {
     const connection = revealConnection(matchId);
     if (connection) {
       payload.connection = connection;
       payload.status = "consumed";
-      // Cleared from DB on reveal
-      payload.summary = null;
-      payload.jobBrief = null;
+      payload.jobBriefPresent = Boolean(connection.jobBrief);
     } else {
-      // Already consumed between status check and reveal
-      payload.status = "consumed";
-      payload.summary = null;
-      payload.jobBrief = null;
+      // Wiped (grace ended) or raced
+      if (status === "ready" || fresh.status === "consumed" || fresh.consumed_at) {
+        payload.status = "consumed";
+      }
+      payload.jobBriefPresent = false;
     }
   }
 

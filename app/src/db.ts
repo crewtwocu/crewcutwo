@@ -57,6 +57,13 @@ try {
   /* column already exists */
 }
 
+// Migration: dual-party reveal grace window end time
+try {
+  db.exec(`ALTER TABLE matches ADD COLUMN reveal_until TEXT`);
+} catch {
+  /* column already exists */
+}
+
 export type MatchStatus =
   | "pending_payment"
   | "partial"
@@ -74,6 +81,7 @@ export type MatchRow = {
   connection_code: string | null;
   connection_note: string | null;
   consumed_at: string | null;
+  reveal_until: string | null;
   created_at: string;
 };
 
@@ -243,36 +251,89 @@ export type ConnectionReveal = {
   code: string;
   note: string;
   handoffHint: string | null;
+  jobBrief: string | null;
   steps: string[];
 };
 
 const REVEAL_STEPS = [
   "Copy the connection code and handoff details now.",
   "Share only what you need with the other party outside Crew.",
-  "Crew steps back — this reveal won't show again.",
+  "Crew steps back — this reveal won't show again after the short grace window.",
 ];
 
-/** Reveal connection once: return secret then clear connection + brief/summary/hint from DB. */
+/** How long both parties can re-fetch the connection after first reveal. Default 15m. */
+export function revealGraceMs(): number {
+  const raw = process.env.REVEAL_GRACE_SECONDS;
+  if (raw && /^\d+$/.test(raw)) {
+    return Math.max(30, Number(raw)) * 1000;
+  }
+  return 15 * 60 * 1000;
+}
+
+function buildConnectionPayload(match: MatchRow): ConnectionReveal {
+  return {
+    code: match.connection_code!,
+    note:
+      match.connection_note ||
+      "One-time connection. Share privately; Crew clears this after the grace window.",
+    handoffHint: match.handoff_hint ?? null,
+    jobBrief: match.job_brief ?? null,
+    steps: [...REVEAL_STEPS],
+  };
+}
+
+function wipeRevealSecrets(matchId: string): void {
+  db.prepare(
+    `UPDATE matches
+     SET connection_code = NULL, connection_note = NULL,
+         summary = NULL, job_brief = NULL, handoff_hint = NULL,
+         reveal_until = NULL
+     WHERE id = ?`
+  ).run(matchId);
+}
+
+/**
+ * Dual-party reveal: first GET while ready starts a grace window and returns
+ * connection (incl. jobBrief). Further GETs within reveal_until return the same
+ * payload so hub + both side polls all succeed. After grace, secrets are wiped.
+ */
 export function revealConnection(matchId: string): ConnectionReveal | null {
   const match = db.prepare("SELECT * FROM matches WHERE id = ?").get(matchId) as MatchRow | undefined;
   if (!match) return null;
-  if (match.status === "consumed" || match.consumed_at) return null;
-  if (match.status !== "ready") return null;
-  if (!match.connection_code) return null;
 
-  const connection: ConnectionReveal = {
-    code: match.connection_code,
-    note: match.connection_note || "One-time connection. Share privately; Crew no longer stores this.",
-    handoffHint: match.handoff_hint ?? null,
-    steps: [...REVEAL_STEPS],
-  };
-  const now = new Date().toISOString();
+  const now = Date.now();
+  const nowIso = new Date(now).toISOString();
+
+  // Already wiped
+  if (!match.connection_code) {
+    return null;
+  }
+
+  // Past grace → wipe and deny
+  if (match.reveal_until && new Date(match.reveal_until).getTime() <= now) {
+    wipeRevealSecrets(matchId);
+    return null;
+  }
+
+  // Active grace (consumed but secrets retained)
+  if (
+    (match.status === "consumed" || match.consumed_at) &&
+    match.reveal_until &&
+    new Date(match.reveal_until).getTime() > now
+  ) {
+    return buildConnectionPayload(match);
+  }
+
+  // First reveal
+  if (match.status !== "ready") return null;
+
+  const revealUntil = new Date(now + revealGraceMs()).toISOString();
   db.prepare(
     `UPDATE matches
-     SET status = 'consumed', consumed_at = ?,
-         connection_code = NULL, connection_note = NULL,
-         summary = NULL, job_brief = NULL, handoff_hint = NULL
+     SET status = 'consumed', consumed_at = ?, reveal_until = ?
      WHERE id = ?`
-  ).run(now, matchId);
-  return connection;
+  ).run(nowIso, revealUntil, matchId);
+
+  const fresh = db.prepare("SELECT * FROM matches WHERE id = ?").get(matchId) as MatchRow;
+  return buildConnectionPayload(fresh);
 }
