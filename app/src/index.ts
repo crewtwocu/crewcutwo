@@ -65,23 +65,51 @@ function parseMarketingRole(raw: unknown): MarketingRole | null {
   return null;
 }
 
+const MARKETING_URL = "https://crewcutwo-marketing.onrender.com";
+
+const CREW_FAVICON =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231C2430'/%3E%3Crect x='7' y='11' width='4.5' height='12' rx='2.25' fill='%23E8E4DE'/%3E%3Crect x='13.75' y='7' width='4.5' height='18' rx='2.25' fill='%23C4784A'/%3E%3Crect x='20.5' y='11' width='4.5' height='12' rx='2.25' fill='%23E8E4DE'/%3E%3C/svg%3E";
+
 const pageShell = (title: string, body: string, extraHead = "") => `<!DOCTYPE html>
 <html lang="en-AU">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Crew — Anonymous match. Pay $5 each side. One-time reveal. Then we vanish." />
   <title>${escapeHtml(title)} — Crew</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/public/style.css" />
+  <link rel="icon" href="${CREW_FAVICON}" />
   ${extraHead}
 </head>
 <body>
-  <main class="wrap">
-    <header class="top">
-      <a href="/" class="brand">Crew</a>
-      <span class="muted">match + payments MVP</span>
-    </header>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a href="/" class="brand" aria-label="Crew home">
+        <svg class="brand-mark" width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="currentColor"/>
+          <rect x="7" y="11" width="4.5" height="12" rx="2.25" fill="#E8E4DE"/>
+          <rect x="13.75" y="7" width="4.5" height="18" rx="2.25" fill="#C4784A"/>
+          <rect x="20.5" y="11" width="4.5" height="12" rx="2.25" fill="#E8E4DE"/>
+        </svg>
+        <span class="brand-text">Crew</span>
+      </a>
+      <p class="tagline">Anonymous match · $5 each · then vanish</p>
+      <a class="header-link" href="${MARKETING_URL}">About Crew</a>
+    </div>
+  </header>
+  <main id="main" class="wrap">
     ${body}
   </main>
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <p class="footer-tagline">Don’t hire a hack. We connect you. Then we vanish.</p>
+      <p class="footer-meta"><a href="${MARKETING_URL}">How Crew works</a> · Anonymous by design</p>
+    </div>
+  </footer>
 </body>
 </html>`;
 
@@ -452,20 +480,32 @@ app.get("/", (req, res) => {
       `
     <h1>${escapeHtml(heading)}</h1>
     ${nudge}
-    <p>Each side pays a flat <strong>$5</strong> match fee. When both are paid, Crew reveals a one-time connection code once, then forgets it. Invoices expire after ~1 hour if unpaid.</p>
+    <p class="lede">Each side pays a flat <strong>$5</strong>. When both are paid, Crew reveals a one-time connection code — then forgets it. No sticky profiles. No records kept after reveal.</p>
+    <p class="trust-strip" role="note">
+      <span>Complete anonymity</span><span class="dot" aria-hidden="true">·</span>
+      <span>$5 / $5</span><span class="dot" aria-hidden="true">·</span>
+      <span>One-time reveal</span><span class="dot" aria-hidden="true">·</span>
+      <span>Then we vanish</span>
+    </p>
     <form method="post" action="/create" class="card">
       ${roleHidden}
-      <label for="summary">Summary (optional)</label>
-      <input id="summary" name="summary" type="text" placeholder="e.g. research assist for agent ops" />
-      <label for="jobBrief">Job brief (optional, cleared on reveal)</label>
-      <input id="jobBrief" name="jobBrief" type="text" placeholder="Sensitive brief held until both sides pay" />
-      <label for="handoffHint">How should the other side reach you after both pay? (optional)</label>
-      <input id="handoffHint" name="handoffHint" type="text" maxlength="500" placeholder="Session, SimpleX, email relay, etc." />
-      <p class="muted">Shown once with the connection code, then cleared. Max ~500 characters.</p>
+      <div class="field">
+        <label for="summary">Summary <span class="muted">(optional)</span></label>
+        <input id="summary" name="summary" type="text" placeholder="e.g. research assist for agent ops" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="jobBrief">Job brief <span class="muted">(optional, cleared on reveal)</span></label>
+        <textarea id="jobBrief" name="jobBrief" rows="4" placeholder="Sensitive brief held until both sides pay"></textarea>
+        <p class="field-hint">Held until both sides pay, then cleared with the connection.</p>
+      </div>
+      <div class="field">
+        <label for="handoffHint">How should the other side reach you after both pay? <span class="muted">(optional)</span></label>
+        <textarea id="handoffHint" name="handoffHint" class="short" rows="3" maxlength="500" placeholder="Session, SimpleX, email relay, etc."></textarea>
+        <p class="field-hint">Shown once with the connection code, then cleared. Max ~500 characters.</p>
+      </div>
       <button type="submit">${escapeHtml(submitLabel)}</button>
     </form>
-    <p class="muted">API: <code>POST /api/matches</code> · Health: <code>GET /health</code></p>
-    <p class="muted">Mode: ${isLiveMode() ? "live XMR Checkout" : "mock (no API key)"} · mock pay ${mockPayAllowed() ? "on" : "off"}</p>
+    <p class="page-nav muted">Invoices expire after ~1 hour if unpaid. <a href="${MARKETING_URL}">Learn how Crew works →</a></p>
   `
     )
   );
@@ -552,7 +592,7 @@ app.post("/create", async (req, res) => {
     ${lead}
     ${shareBlocks}
     <p class="muted">Hub (both sides + status): <a href="${escapeHtml(shareUrls.hub)}">${escapeHtml(shareUrls.hub)}</a></p>
-    <p><a href="${escapeHtml(backHref)}">← New match</a></p>
+    <p class="page-nav"><a href="${escapeHtml(backHref)}">← New match</a></p>
   `
       )
     );
@@ -636,7 +676,7 @@ function renderSidePage(matchId: string, side: "contractor" | "operator", res: e
             : ""
     }
 
-    <p><a href="/m/${escapeHtml(matchId)}">Hub</a> · <a href="/">← New match</a></p>
+    <p class="page-nav"><a href="/m/${escapeHtml(matchId)}">Hub</a> · <a href="/">← New match</a></p>
   `,
       pollScript(matchId, side)
     )
@@ -834,7 +874,7 @@ app.get("/m/:id", (req, res) => {
 
     ${cancelBlock}
 
-    <p><a href="/">← New match</a> · <a href="/api/matches/${escapeHtml(peek.id)}">JSON</a></p>
+    <p class="page-nav"><a href="/">← New match</a></p>
   `,
       pollScript(peek.id)
     )
