@@ -465,7 +465,7 @@ a:hover { color: var(--accent); }
 }
 
 .value-band-inner {
-  max-width: 36rem;
+  max-width: 40rem;
   margin: 0 auto;
   text-align: center;
   padding: var(--space-5) var(--space-5);
@@ -499,6 +499,13 @@ a:hover { color: var(--accent); }
   color: var(--text-muted);
   font-size: 1.0625rem;
   line-height: 1.65;
+}
+
+.value-band-boundary {
+  margin: var(--space-3) 0 0;
+  color: var(--slate-700, #3d4450);
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
 /* Sections */

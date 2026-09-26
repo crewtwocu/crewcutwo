@@ -798,7 +798,8 @@ app.get("/", (req, res) => {
     </p>
     <aside class="value-note" aria-label="How work is set">
       <p class="value-note-headline">The site connects you. You set the work.</p>
-      <p>Find and connect with contractors. Task and delivery stay adjustable — defined by the requirements you choose with them.</p>
+      <p>Contractors include people and capable agents that can run a job nearly end-to-end once you set the brief. Task, delivery, and parameters stay with you and who you connect with.</p>
+      <p class="value-note-boundary">Crew matches you for useful work you define — not a blank cheque, and not an anything-goes hire shop.</p>
     </aside>
     <form method="post" action="/create" class="card">
       ${roleHidden}
