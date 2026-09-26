@@ -130,3 +130,66 @@ export async function fetchPublicInvoiceStatus(invoiceId: string): Promise<Publi
 export function isConfirmedStatus(status: string): boolean {
   return status === "confirmed";
 }
+
+export type CreatedCallbackInvoice = {
+  id: string;
+  payUrl: string;
+  amountUsd: number;
+};
+
+/** Create a $5 invoice for a paid callback ticket (not a match side). */
+export async function createCallbackInvoice(opts: {
+  ticketId: string;
+}): Promise<CreatedCallbackInvoice> {
+  const key = apiKey();
+  if (!key) {
+    const id = `mock_callback_${opts.ticketId.slice(0, 8)}_${Date.now().toString(36)}`;
+    return {
+      id,
+      payUrl: `${publicBase()}/mock-pay/${id}`,
+      amountUsd: AMOUNT_USD,
+    };
+  }
+
+  const body = {
+    amount_fiat: "5.00",
+    currency: "USD",
+    confirmation_target: 2,
+    metadata: {
+      kind: "callback_ticket",
+      ticket_id: opts.ticketId,
+      brand: "Crew",
+    },
+  };
+
+  const res = await fetch(`${baseUrl()}/invoices`, {
+    method: "POST",
+    headers: {
+      Authorization: `ApiKey ${key}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`XMR Checkout create callback invoice failed: ${res.status} ${text}`);
+  }
+
+  const data = (await res.json()) as {
+    id: string;
+    invoice_url?: string;
+  };
+
+  if (!data.id) throw new Error("XMR Checkout response missing id");
+
+  const payUrl =
+    data.invoice_url || `https://xmrcheckout.com/invoice/${data.id}`;
+
+  return {
+    id: data.id,
+    payUrl,
+    amountUsd: AMOUNT_USD,
+  };
+}

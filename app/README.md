@@ -130,7 +130,7 @@ If present on this box, secrets may load from `/workspace/crew-lolipop/xmrchecko
 See `src/xmrcheckout.ts`. Confirmed contract:
 
 - **Auth:** `Authorization: ApiKey $XMRCHECKOUT_API_KEY`
-- **Create:** `POST {BASE}/invoices` with `amount_fiat: "5.00"`, `currency: "USD"`, `confirmation_target: 2`, metadata `{ match_id, side, brand: "Crew" }`
+- **Create:** `POST {BASE}/invoices` with `amount_fiat: "5.00"`, `currency: "USD"`, `confirmation_target: 2`, metadata `{ match_id, side, brand: "Crew" }` (matches) or `{ kind: "callback_ticket", ticket_id, brand: "Crew" }` (callback gate)
 - **Pay URL:** response `invoice_url` (fallback `https://xmrcheckout.com/invoice/<id>`)
 - **Paid (MVP):** poll `GET {BASE}/public/invoice/<id>` (no auth); treat `status === "confirmed"` as paid. Crew wires this into `GET /api/matches/:id` via `syncLivePayments` (also available as `POST /api/dev/poll/:invoiceId`).
 - `checkout_continue_url` omitted until a public https host exists
@@ -140,14 +140,15 @@ When no API key: mock invoices with `/mock-pay/:invoiceId`.
 ## API
 
 - `GET /health`
-- `POST /api/contact` — privacy-preserving one-shot **email me back / request a callback**. Body: `{ "method": "email"|"callback", "contact": string, "note"?: string, "website"?: string }` (`website` = honeypot). Sends **one** outbound message to ops (SMTP email, or Twilio SMS / email-to-ops for callbacks), then **discards** the payload — **no SQLite / CRM write**. Logs only `{ ts, event, requestId, result }` (never email/phone/note/body). Honeypot filled → success-looking response, no send. Fail-closed after in-memory retries. Rate-limited per IP. Response: `{ ok, requestId }` (never echoes contact). When SMTP/Twilio unset, uses a console **stub** transport (still no PII in logs).
+- `POST /api/contact` — privacy-preserving Get-a-reply. Body: `{ "method": "email"|"callback", "contact": string, "note"?: string, "website"?: string }` (`website` = honeypot). **Email:** one-shot outbound to ops, then discard — response `{ ok, requestId }`. **Callback:** creates a **$5** payment intent tied to an opaque `ticketId` (phone held only in ephemeral process memory — never SQLite); response `{ ok, requestId, paymentRequired: true, ticketId, invoiceId, payUrl, amountUsd: 5, expiresAt }`. Ticket is **issued** (outbound notify + wipe phone) only after payment via mock pay / webhook / live poll. Honeypot → success-looking, no send/pay. Rate-limited per IP. Never echoes contact. Stub outbound when SMTP/Twilio unset.
+- `GET /api/callback-tickets/:ticketId` — public ticket status (`awaiting_payment`|`paid`|`issued`|`expired`|`failed`); never returns phone/note. Live mode syncs confirmed XMR invoices while awaiting.
 - `POST /api/matches` — `{ "summary"?: string, "jobBrief"?: string, "handoffHint"?: string }` (hint max ~500 chars) → `{ id, expiresAt, invoices, shareUrls: { contractor, operator, hub } }` (429 if rate-limited)
 - `GET /api/matches/:id` — status + `expiresAt` + `jobBriefPresent`; before both paid, `jobBrief`/`summary` are null. When both paid, includes `connection` during grace (`code`, `note`, `jobBrief`, `handoffHint`, `steps`); secrets wiped after `reveal_until`. May return `expired` / `cancelled`. Live mode: syncs confirmed invoices on each GET (mock invoices never hit the public API).
 - `GET /api/matches/:id?side=contractor|operator` — same, plus `side` / `yourPayUrl` emphasis (full invoices still returned)
 - `POST /api/matches/:id/cancel` — cancel open match → `{ ok, id, status: "cancelled" }` (409 if not cancellable)
-- `POST /api/dev/pay/:invoiceId` — mock mark paid (404/disabled when live key set and `ALLOW_MOCK_PAY` not true; 409 if match expired/cancelled)
-- `POST /api/webhooks/xmrcheckout` — `{ invoiceId, status: "paid"|"confirmed" }` (secret optional)
-- `POST /api/dev/poll/:invoiceId` — live-only helper to poll public invoice and mark paid if confirmed
+- `POST /api/dev/pay/:invoiceId` — mock mark paid for **match** invoices or **callback tickets** (404/disabled when live key set and `ALLOW_MOCK_PAY` not true; 409 if match/ticket expired)
+- `POST /api/webhooks/xmrcheckout` — `{ invoiceId, status: "paid"|"confirmed" }` (secret optional); also completes callback tickets
+- `POST /api/dev/poll/:invoiceId` — live-only helper to poll public invoice and mark paid if confirmed (match or callback)
 
 ### HTML routes
 
@@ -198,10 +199,26 @@ curl -s -X POST "$BASE/api/matches/$MATCH2/cancel"
 ## Contact / Get-a-reply (privacy)
 
 ```bash
-# With app running (stub outbound if SMTP unset):
-curl -s -X POST http://127.0.0.1:3847/api/contact   -H 'Content-Type: application/json'   -d '{"method":"email","contact":"you@example.com","note":"quick question","website":""}'
-# → {"ok":true,"requestId":"…"}  — check server log for {"event":"contact","result":"sent",…} with no PII
+# Email (free, immediate) — stub outbound if SMTP unset:
+curl -s -X POST http://127.0.0.1:3847/api/contact \
+  -H 'Content-Type: application/json' \
+  -d '{"method":"email","contact":"you@example.com","note":"quick question","website":""}'
+# → {"ok":true,"requestId":"…"}
+
+# Callback ($5 gate) — ticket issued only after pay:
+curl -s -X POST http://127.0.0.1:3847/api/contact \
+  -H 'Content-Type: application/json' \
+  -d '{"method":"callback","contact":"+61400000000","note":"call about match","website":""}' | tee /tmp/cb.json
+# → {"ok":true,"paymentRequired":true,"ticketId":"…","payUrl":"…/mock-pay/…","amountUsd":5,…}
+
+INV=$(node -pe 'JSON.parse(require("fs").readFileSync("/tmp/cb.json","utf8")).invoiceId')
+TID=$(node -pe 'JSON.parse(require("fs").readFileSync("/tmp/cb.json","utf8")).ticketId')
+curl -s -X POST "http://127.0.0.1:3847/api/dev/pay/$INV"
+curl -s "http://127.0.0.1:3847/api/callback-tickets/$TID"
+# → {"ok":true,"status":"issued","ticketId":"…"} — phone never in response or SQLite
 ```
+
+**Privacy notes (callback):** phone/note exist only in an in-memory map keyed by opaque `ticketId` until payment succeeds, expiry, or failure — then wiped. No contact tables. Logs use `ticketId` / `invoiceId` / result only. Email path unchanged (no $5 gate).
 
 Do **not** log request bodies for `/api/contact` at the reverse proxy / access-log layer. The handler redacts `req.body` contact fields after processing.
 
