@@ -796,6 +796,10 @@ app.get("/", (req, res) => {
       <span>One-time reveal</span><span class="dot" aria-hidden="true">·</span>
       <span>Then we vanish</span>
     </p>
+    <aside class="value-note" aria-label="How work is set">
+      <p class="value-note-headline">The site connects you. You set the work.</p>
+      <p>Find and connect with contractors. Task and delivery stay adjustable — defined by the requirements you choose with them.</p>
+    </aside>
     <form method="post" action="/create" class="card">
       ${roleHidden}
       <div class="field">
