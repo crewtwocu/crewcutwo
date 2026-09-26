@@ -2,18 +2,21 @@
  * Privacy-preserving one-shot contact / callback requests.
  *
  * - No DB / CRM / mailing-list writes.
- * - Payload lives only in request-scoped memory; discarded after send attempt.
- * - Logs: timestamp, result (sent|failed), requestId only — never email/phone/note/body.
+ * - Email path: payload lives only in request-scoped memory; discarded after send.
+ * - Callback path: $5 payment required before a ticket is issued. Phone/note held
+ *   only in ephemeral process memory (see callbackTickets.ts) until pay/expire/fail,
+ *   then wiped — never in SQLite contact tables.
+ * - Logs: timestamp, result, requestId/ticketId only — never email/phone/note/body.
  * - Fail-closed: in-memory retries only; never park contact data for later.
  */
 
 import { randomUUID } from "node:crypto";
 import {
   opsEmail,
-  opsPhone,
   sendOutbound,
   type OutboundPayload,
 } from "./outbound.js";
+import { createCallbackTicket } from "./callbackTickets.js";
 
 export type ContactMethod = "email" | "callback";
 
@@ -28,7 +31,17 @@ export type ContactRequestBody = {
 
 export type ContactHandlerResult = {
   httpStatus: number;
-  body: { ok: boolean; requestId: string };
+  body: {
+    ok: boolean;
+    requestId: string;
+    /** Present when callback requires $5 before ticket issuance. */
+    paymentRequired?: boolean;
+    ticketId?: string;
+    invoiceId?: string;
+    payUrl?: string;
+    amountUsd?: number;
+    expiresAt?: string;
+  };
 };
 
 const CONTACT_LIMIT = 5;
@@ -59,8 +72,8 @@ export function checkContactRateLimit(ip: string): boolean {
 /** App-log line: no PII, no request body. */
 export function logContactEvent(
   requestId: string,
-  result: "sent" | "failed",
-  extra?: { transport?: string; honeypot?: boolean; rateLimited?: boolean }
+  result: "sent" | "failed" | "payment_pending",
+  extra?: { transport?: string; honeypot?: boolean; rateLimited?: boolean; method?: string }
 ): void {
   const row: Record<string, string | boolean> = {
     ts: new Date().toISOString(),
@@ -71,6 +84,7 @@ export function logContactEvent(
   if (extra?.transport) row.transport = extra.transport;
   if (extra?.honeypot) row.honeypot = true;
   if (extra?.rateLimited) row.rateLimited = true;
+  if (extra?.method) row.method = extra.method;
   console.log(JSON.stringify(row));
 }
 
@@ -99,48 +113,17 @@ function honeypotFilled(body: ContactRequestBody): boolean {
   return Boolean(a || b);
 }
 
-function buildOutbound(
-  method: ContactMethod,
-  contact: string,
-  note: string
-): OutboundPayload {
+function buildEmailOutbound(contact: string, note: string): OutboundPayload {
   const noteLine = note ? `Note: ${note}` : "Note: (none)";
-
-  if (method === "email") {
-    const to = opsEmail();
-    // If no ops inbox configured, still attempt stub path via a placeholder "to"
-    // that only the stub transport will accept without sending.
-    const dest = to || "stub@localhost";
-    return {
-      kind: "email",
-      to: dest,
-      subject: "Crew contact: email reply request",
-      text:
-        `Someone requested an email reply via the Crew marketplace.\n\n` +
-        `Reply-to: ${contact}\n` +
-        `${noteLine}\n\n` +
-        `This message is one-shot; Crew does not store the contact.\n`,
-    };
-  }
-
-  // callback: prefer SMS to ops phone; else email-to-ops
-  const phone = opsPhone();
-  if (phone) {
-    return {
-      kind: "sms",
-      to: phone,
-      text: `Crew callback request: ${contact}. ${noteLine}`.slice(0, 1500),
-    };
-  }
-
-  const to = opsEmail() || "stub@localhost";
+  const to = opsEmail();
+  const dest = to || "stub@localhost";
   return {
     kind: "email",
-    to,
-    subject: "Crew contact: callback request",
+    to: dest,
+    subject: "Crew contact: email reply request",
     text:
-      `Someone requested a phone callback via the Crew marketplace.\n\n` +
-      `Phone: ${contact}\n` +
+      `Someone requested an email reply via the Crew marketplace.\n\n` +
+      `Reply-to: ${contact}\n` +
       `${noteLine}\n\n` +
       `This message is one-shot; Crew does not store the contact.\n`,
   };
@@ -148,7 +131,8 @@ function buildOutbound(
 
 /**
  * Handle a contact POST. Mutates nothing durable.
- * After return, callers should treat the request body as discarded.
+ * Email: send immediately then discard.
+ * Callback: create $5 payment intent; ticket issued only after payment (see callbackTickets).
  */
 export async function handleContactRequest(
   body: ContactRequestBody,
@@ -164,7 +148,7 @@ export async function handleContactRequest(
     };
   }
 
-  // Honeypot: success-looking response, no send, no PII in logs
+  // Honeypot: success-looking response, no send, no payment, no PII in logs
   if (honeypotFilled(body)) {
     logContactEvent(requestId, "sent", { honeypot: true });
     return { httpStatus: 200, body: { ok: true, requestId } };
@@ -176,7 +160,6 @@ export async function handleContactRequest(
 
   if (!method || !contact) {
     logContactEvent(requestId, "failed");
-    // Generic — do not echo which field failed with PII
     return { httpStatus: 400, body: { ok: false, requestId } };
   }
 
@@ -189,9 +172,32 @@ export async function handleContactRequest(
     return { httpStatus: 400, body: { ok: false, requestId } };
   }
 
-  const built = buildOutbound(method, contact, note);
-  // Drop locals that hold PII as soon as payload is built
-  // (payload still holds them until send finishes — then we null it)
+  // —— Callback: payment gate ($5) before ticket issuance ——
+  if (method === "callback") {
+    const created = await createCallbackTicket({ phone: contact, note });
+    if (!created.ok) {
+      logContactEvent(requestId, "failed", { method: "callback" });
+      const status = created.reason === "invalid_phone" ? 400 : 503;
+      return { httpStatus: status, body: { ok: false, requestId } };
+    }
+    logContactEvent(created.ticketId, "payment_pending", { method: "callback" });
+    return {
+      httpStatus: 200,
+      body: {
+        ok: true,
+        requestId: created.ticketId,
+        paymentRequired: true,
+        ticketId: created.ticketId,
+        invoiceId: created.invoiceId,
+        payUrl: created.payUrl,
+        amountUsd: created.amountUsd,
+        expiresAt: created.expiresAt,
+      },
+    };
+  }
+
+  // —— Email: immediate one-shot (unchanged) ——
+  const built = buildEmailOutbound(contact, note);
   let outbound: OutboundPayload | null = built;
   const noOpsDest = built.to === "stub@localhost";
 
@@ -210,14 +216,12 @@ export async function handleContactRequest(
         break;
       }
     } catch {
-      // Swallow — no error message (may contain destinations)
       if (attempt < SEND_ATTEMPTS) {
         await sleep(RETRY_DELAY_MS * attempt);
       }
     }
   }
 
-  // Fail-closed discard: clear payload from memory; never park for later
   if (outbound) {
     outbound.to = "";
     outbound.text = "";
@@ -226,11 +230,11 @@ export async function handleContactRequest(
   }
 
   if (sent) {
-    logContactEvent(requestId, "sent", { transport: lastTransport });
+    logContactEvent(requestId, "sent", { transport: lastTransport, method: "email" });
     return { httpStatus: 200, body: { ok: true, requestId } };
   }
 
-  logContactEvent(requestId, "failed", { transport: lastTransport });
+  logContactEvent(requestId, "failed", { transport: lastTransport, method: "email" });
   return { httpStatus: 503, body: { ok: false, requestId } };
 }
 

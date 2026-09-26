@@ -63,7 +63,7 @@ Match-only: `docker compose up --build match`.
 
 ## 6. Contact route privacy
 
-`POST /api/contact` never writes visitor email/phone/note to SQLite. App logs only timestamp, `requestId`, and `sent`|`failed`. **Strip request bodies** for this path in any reverse-proxy / CDN access logs (do not enable body logging). The handler also redacts `req.body` fields after handling.
+`POST /api/contact` never writes visitor email/phone/note to SQLite. **Email** is one-shot then discard. **Callback** requires a **$5** XMR Checkout (or mock) payment before a ticket is issued; the phone is held only in ephemeral process memory until pay/expire/fail, then wiped (`callbackTickets.ts`). App logs only timestamp, ids, and result — never PII. **Strip request bodies** for `/api/contact` in reverse-proxy / CDN access logs. The handler also redacts `req.body` fields after handling.
 
 ## 7. Checklist
 
