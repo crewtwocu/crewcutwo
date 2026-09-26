@@ -234,6 +234,12 @@ h3 {
   font-size: 0.95rem;
   line-height: 1.55;
 }
+.value-note > p:not(.value-note-headline) + p {
+  margin-top: 0.65rem;
+}
+.value-note-boundary {
+  color: var(--slate-700);
+}
 
 .card {
   background: var(--card);
