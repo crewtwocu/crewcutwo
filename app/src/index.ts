@@ -9,6 +9,13 @@ import { db, applyExpiryIfNeeded, matchExpiresAt, type MatchStatus } from "./db.
 import { isLiveMode, mockPayAllowed, fetchPublicInvoiceStatus, isConfirmedStatus } from "./xmrcheckout.js";
 import { randomUUID } from "node:crypto";
 import { handleContactRequest, redactContactBody } from "./contact.js";
+import {
+  completeCallbackPayment,
+  findCallbackTicketByInvoice,
+  getCallbackTicket,
+  isCallbackInvoice,
+  sweepExpiredCallbackTickets,
+} from "./callbackTickets.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -130,6 +137,9 @@ function contactFormScript(): string {
   var websiteInput = document.getElementById("contact-website");
   var statusEl = document.getElementById("contact-status");
   var submitBtn = document.getElementById("contact-submit");
+  var payPanel = document.getElementById("contact-pay-panel");
+  var ticketPanel = document.getElementById("contact-ticket-panel");
+  var pollTimer = null;
 
   function method() {
     var checked = form.querySelector('input[name="method"]:checked');
@@ -143,6 +153,11 @@ function contactFormScript(): string {
     if (phoneField) phoneField.hidden = isEmail;
     if (emailInput) emailInput.required = isEmail;
     if (phoneInput) phoneInput.required = !isEmail;
+    if (submitBtn) {
+      submitBtn.textContent = isEmail ? "Send" : "Continue — $5 secures callback";
+    }
+    var hint = document.getElementById("contact-callback-hint");
+    if (hint) hint.hidden = isEmail;
   }
 
   form.querySelectorAll('input[name="method"]').forEach(function (el) {
@@ -157,6 +172,77 @@ function contactFormScript(): string {
     statusEl.classList.toggle("ok", !!ok);
     statusEl.classList.toggle("warn", !ok);
   }
+
+  function hidePayPanels() {
+    if (payPanel) { payPanel.hidden = true; payPanel.innerHTML = ""; }
+    if (ticketPanel) { ticketPanel.hidden = true; ticketPanel.innerHTML = ""; }
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
+  function showIssued(ticketId) {
+    hidePayPanels();
+    if (!ticketPanel) return;
+    ticketPanel.hidden = false;
+    ticketPanel.innerHTML =
+      "<p class=\\"contact-ticket-ok\\"><strong>Callback ticket issued.</strong></p>" +
+      "<p class=\\"muted\\">Your only touchpoint from here is the call itself. Keep this ticket id:</p>" +
+      "<p class=\\"mono contact-ticket-id\\">" + ticketId + "</p>";
+    showStatus("Paid — ticket issued.", true);
+  }
+
+  function showPayPending(data) {
+    hidePayPanels();
+    if (!payPanel) return;
+    payPanel.hidden = false;
+    var payUrl = data.payUrl || "#";
+    var ticketId = data.ticketId || data.requestId || "";
+    payPanel.innerHTML =
+      "<p><strong>Your five dollars secures your callback.</strong> Pay to issue the ticket — nothing is saved until then; after pay we notify ops once and wipe the number.</p>" +
+      "<p><a class=\\"btn\\" href=\\"" + payUrl + "\\">Pay $5 now</a></p>" +
+      "<p class=\\"muted mono\\">Ticket (pending): " + ticketId + "</p>" +
+      "<p class=\\"muted\\" id=\\"contact-pay-wait\\">Waiting for payment…</p>";
+    showStatus("Your five dollars secures your callback — pay to issue the ticket.", true);
+    startPoll(ticketId);
+  }
+
+  function startPoll(ticketId) {
+    if (!ticketId) return;
+    if (pollTimer) clearInterval(pollTimer);
+    var tries = 0;
+    function tick() {
+      tries++;
+      fetch("/api/callback-tickets/" + encodeURIComponent(ticketId), {
+        headers: { "Accept": "application/json" }
+      })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+          if (!res.ok || !res.j) return;
+          if (res.j.status === "issued") {
+            showIssued(res.j.ticketId || ticketId);
+            return;
+          }
+          if (res.j.status === "expired" || res.j.status === "failed") {
+            hidePayPanels();
+            showStatus("Ticket " + res.j.status + ". Start again if you still need a callback.", false);
+            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+          }
+        })
+        .catch(function () { /* keep polling */ });
+      if (tries > 200 && pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+    tick();
+    pollTimer = setInterval(tick, 3000);
+  }
+
+  // Resume from returnTo after mock/live pay
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var resume = params.get("callbackTicket");
+    if (resume) {
+      startPoll(resume);
+      showStatus("Checking payment…", true);
+    }
+  } catch (e) { /* ignore */ }
 
   form.addEventListener("submit", function (ev) {
     ev.preventDefault();
@@ -173,7 +259,8 @@ function contactFormScript(): string {
     }
 
     if (submitBtn) submitBtn.disabled = true;
-    showStatus("Sending…", true);
+    hidePayPanels();
+    showStatus(m === "callback" ? "Preparing payment…" : "Sending…", true);
 
     fetch("/api/contact", {
       method: "POST",
@@ -189,6 +276,10 @@ function contactFormScript(): string {
         return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
       })
       .then(function (res) {
+        if (res.ok && res.j && res.j.ok && res.j.paymentRequired) {
+          showPayPending(res.j);
+          return;
+        }
         if (res.ok && res.j && res.j.ok) {
           showStatus("Sent. We’ll be in touch.", true);
           form.reset();
@@ -423,6 +514,34 @@ app.post("/api/contact", async (req, res) => {
   }
 });
 
+/**
+ * Public status for a paid-callback ticket. Never returns phone/note.
+ * In live mode, polls XMR Checkout for awaiting tickets (non-mock invoice ids).
+ */
+app.get("/api/callback-tickets/:ticketId", async (req, res) => {
+  sweepExpiredCallbackTickets();
+  let ticket = getCallbackTicket(req.params.ticketId);
+  if (!ticket) return res.status(404).json({ ok: false, error: "not_found" });
+
+  if (
+    isLiveMode() &&
+    ticket.status === "awaiting_payment" &&
+    !ticket.invoiceId.startsWith("mock_")
+  ) {
+    try {
+      const pub = await fetchPublicInvoiceStatus(ticket.invoiceId);
+      if (isConfirmedStatus(pub.status)) {
+        await completeCallbackPayment(ticket.invoiceId);
+        ticket = getCallbackTicket(req.params.ticketId) || ticket;
+      }
+    } catch {
+      /* swallow — status still returned */
+    }
+  }
+
+  res.json({ ok: true, ...ticket });
+});
+
 app.post("/api/matches", async (req, res) => {
   const ip = clientIp(req);
   if (!checkCreateRateLimit(ip)) {
@@ -479,10 +598,45 @@ app.post("/api/matches/:id/cancel", (req, res) => {
   }
 });
 
-app.post("/api/dev/pay/:invoiceId", (req, res) => {
+app.post("/api/dev/pay/:invoiceId", async (req, res) => {
   if (!mockPayAllowed()) {
     return res.status(404).json({ error: "mock pay disabled" });
   }
+
+  // Callback-ticket invoices live in memory, not SQLite match invoices.
+  if (isCallbackInvoice(req.params.invoiceId)) {
+    const done = await completeCallbackPayment(req.params.invoiceId);
+    if (!done.ok && done.reason === "not_found") {
+      return res.status(404).json({ error: "invoice not found" });
+    }
+    if (!done.ok && (done.reason === "expired" || done.status === "expired")) {
+      return res.status(409).json({ error: "pay_refused", message: "Callback ticket expired", status: "expired" });
+    }
+    const accept = req.get("accept") || "";
+    const wantsHtml = accept.includes("text/html") || req.query.redirect === "1";
+    if (wantsHtml || req.query.redirect === "1") {
+      const returnTo =
+        typeof req.body?.returnTo === "string"
+          ? req.body.returnTo
+          : typeof req.query.returnTo === "string"
+            ? req.query.returnTo
+            : `/?callbackTicket=${encodeURIComponent(done.ticketId || "")}#get-a-reply`;
+      const safe =
+        (returnTo.startsWith("/?") || returnTo.startsWith("/#") || returnTo.startsWith("/callback-ticket/")) &&
+        !returnTo.includes("://")
+          ? returnTo
+          : `/?callbackTicket=${encodeURIComponent(done.ticketId || "")}#get-a-reply`;
+      return res.redirect(303, safe);
+    }
+    return res.json({
+      ok: done.ok,
+      kind: "callback_ticket",
+      invoiceId: req.params.invoiceId,
+      ticketId: done.ticketId,
+      status: done.status,
+    });
+  }
+
   const invoice = markInvoicePaid(req.params.invoiceId);
   if (!invoice) {
     // Distinguish not found vs expired/cancelled
@@ -522,7 +676,7 @@ app.post("/api/dev/pay/:invoiceId", (req, res) => {
   res.json({ ok: true, invoiceId: invoice.id, matchId: invoice.match_id, status: invoice.status });
 });
 
-app.post("/api/webhooks/xmrcheckout", (req, res) => {
+app.post("/api/webhooks/xmrcheckout", async (req, res) => {
   const secret = process.env.WEBHOOK_SECRET || process.env.XMRCHECKOUT_WEBHOOK_SECRET;
   if (secret) {
     const hdr =
@@ -554,7 +708,22 @@ app.post("/api/webhooks/xmrcheckout", (req, res) => {
     return res.json({ ok: true, ignored: true, status });
   }
 
-  const invoice = markInvoicePaid(String(invoiceId));
+  const idStr = String(invoiceId);
+  if (isCallbackInvoice(idStr)) {
+    const done = await completeCallbackPayment(idStr);
+    if (!done.ok && done.reason === "not_found") {
+      return res.status(404).json({ error: "invoice not found or match closed" });
+    }
+    return res.json({
+      ok: done.ok,
+      kind: "callback_ticket",
+      invoiceId: idStr,
+      ticketId: done.ticketId,
+      status: done.status,
+    });
+  }
+
+  const invoice = markInvoicePaid(idStr);
   if (!invoice) return res.status(404).json({ error: "invoice not found or match closed" });
   res.json({ ok: true, invoiceId: invoice.id, matchId: invoice.match_id });
 });
@@ -567,6 +736,20 @@ app.post("/api/dev/poll/:invoiceId", async (req, res) => {
   try {
     const pub = await fetchPublicInvoiceStatus(req.params.invoiceId);
     if (isConfirmedStatus(pub.status)) {
+      if (isCallbackInvoice(req.params.invoiceId) || findCallbackTicketByInvoice(req.params.invoiceId)) {
+        const done = await completeCallbackPayment(req.params.invoiceId);
+        if (!done.ok && done.reason === "not_found") {
+          return res.status(404).json({ error: "invoice not found locally or match closed" });
+        }
+        return res.json({
+          ok: true,
+          paid: true,
+          kind: "callback_ticket",
+          status: pub.status,
+          ticketId: done.ticketId,
+          ticketStatus: done.status,
+        });
+      }
       const invoice = markInvoicePaid(req.params.invoiceId);
       if (!invoice) return res.status(404).json({ error: "invoice not found locally or match closed" });
       return res.json({ ok: true, paid: true, status: pub.status, matchId: invoice.match_id });
@@ -633,7 +816,7 @@ app.get("/", (req, res) => {
     </form>
     <section class="card contact-card" id="get-a-reply" aria-labelledby="contact-heading">
       <h2 id="contact-heading">Get a reply</h2>
-      <p class="muted contact-lede">Prefer a human? Ask Crew to email you back or call you once. One message — nothing sticky.</p>
+      <p class="muted contact-lede">Prefer a human? Ask Crew to email you back (free), or request a callback — <strong>your five dollars secures your callback</strong>. Nothing sticky — no address book.</p>
       <form id="contact-form" class="contact-form" novalidate>
         <fieldset class="contact-method">
           <legend class="sr-only">How should we reach you?</legend>
@@ -643,7 +826,7 @@ app.get("/", (req, res) => {
           </label>
           <label class="choice">
             <input type="radio" name="method" value="callback" />
-            <span>Request a callback</span>
+            <span>Callback ticket ($5)</span>
           </label>
         </fieldset>
         <div class="field" data-contact-email>
@@ -653,6 +836,7 @@ app.get("/", (req, res) => {
         <div class="field" data-contact-phone hidden>
           <label for="contact-phone">Phone</label>
           <input id="contact-phone" name="phone" type="tel" autocomplete="tel" maxlength="20" placeholder="+61 …" />
+          <p id="contact-callback-hint" class="field-hint" hidden>Your five dollars secures your callback. Pay → ticket issued → we call once. Number held only until payment, then wiped — never in a database.</p>
         </div>
         <div class="field">
           <label for="contact-note">Note <span class="muted">(optional, one line)</span></label>
@@ -664,6 +848,8 @@ app.get("/", (req, res) => {
         </div>
         <button type="submit" id="contact-submit">Send</button>
         <p id="contact-status" class="contact-status" role="status" hidden></p>
+        <div id="contact-pay-panel" class="contact-pay-panel" hidden></div>
+        <div id="contact-ticket-panel" class="contact-ticket-panel" hidden></div>
       </form>
     </section>
     <p class="page-nav muted">Invoices expire after ~1 hour if unpaid. <a href="${MARKETING_URL}">Learn how Crew works →</a></p>
@@ -1046,6 +1232,54 @@ app.get("/mock-pay/:invoiceId", (req, res) => {
   if (!mockPayAllowed()) {
     return res.status(404).type("html").send(pageShell("Disabled", "<h1>Mock pay disabled</h1>"));
   }
+
+  // Paid-callback ticket invoices (ephemeral — not in SQLite)
+  const cb = findCallbackTicketByInvoice(req.params.invoiceId);
+  if (cb) {
+    const returnTo =
+      typeof req.query.returnTo === "string" &&
+      (req.query.returnTo.startsWith("/?") ||
+        req.query.returnTo.startsWith("/#") ||
+        req.query.returnTo.startsWith("/callback-ticket/")) &&
+      !req.query.returnTo.includes("://")
+        ? req.query.returnTo
+        : `/?callbackTicket=${encodeURIComponent(cb.ticketId)}#get-a-reply`;
+
+    if (cb.status === "issued" || cb.status === "paid") {
+      return res.redirect(303, returnTo);
+    }
+    if (cb.status === "expired" || cb.status === "failed") {
+      return res.type("html").send(
+        pageShell(
+          "Closed",
+          `
+    <h1>Payment closed</h1>
+    <p>Callback ticket status: <strong>${escapeHtml(cb.status)}</strong>. Do not pay.</p>
+    <p><a href="/#get-a-reply">Back</a></p>
+  `
+        )
+      );
+    }
+
+    return res.type("html").send(
+      pageShell(
+        "Mock pay — callback",
+        `
+    <h1>Mock pay</h1>
+    <p>Your five dollars secures your callback · <strong>$5 USD</strong></p>
+    <p class="mono">${escapeHtml(cb.invoiceId)}</p>
+    <p class="muted">Ticket (pending): <span class="mono">${escapeHtml(cb.ticketId)}</span></p>
+    <p class="muted">Expires: ${escapeHtml(formatExpiryLocal(cb.expiresAt))}</p>
+    <form method="post" action="/api/dev/pay/${encodeURIComponent(cb.invoiceId)}?redirect=1">
+      <input type="hidden" name="returnTo" value="${escapeHtml(returnTo)}" />
+      <button type="submit">Mark paid (mock)</button>
+    </form>
+    <p><a href="${escapeHtml(returnTo)}">Cancel</a></p>
+  `
+      )
+    );
+  }
+
   const invoice = db.prepare("SELECT * FROM invoices WHERE id = ?").get(req.params.invoiceId) as
     | { id: string; match_id: string; side: string; status: string; expires_at: string | null }
     | undefined;
