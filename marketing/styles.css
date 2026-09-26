@@ -456,6 +456,51 @@ a:hover { color: var(--accent); }
   }
 }
 
+/* Value band — soft trust beat under hero */
+.value-band {
+  padding: var(--space-6) 0 var(--space-7);
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.value-band-inner {
+  max-width: 36rem;
+  margin: 0 auto;
+  text-align: center;
+  padding: var(--space-5) var(--space-5);
+  background: linear-gradient(180deg, #fff9f4 0%, var(--white) 100%);
+  border: 1px solid rgba(196, 120, 74, 0.22);
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: 0 4px 24px rgba(15, 20, 25, 0.05);
+}
+
+.value-band-kicker {
+  margin: 0 0 var(--space-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.value-band-title {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-serif);
+  font-size: clamp(1.45rem, 2.8vw, 1.85rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--slate-900);
+}
+
+.value-band-lede {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
+
 /* Sections */
 .section {
   padding: var(--space-8) 0;
