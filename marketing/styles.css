@@ -1,4 +1,4 @@
-/* Crew landing — deep slate + warm terracotta accent */
+/* Crew landing — deep slate + light charcoal accent */
 
 :root {
   --slate-950: #0f1419;
@@ -12,13 +12,20 @@
   --cream-warm: #ebe4da;
   --paper: #faf8f5;
   --white: #ffffff;
-  --accent: #c4784a;
-  --accent-hover: #b0683c;
-  --accent-soft: rgba(196, 120, 74, 0.12);
-  --accent-muted: #d4a07a;
+  /* Light charcoal accent. --accent is for fills, borders and focus rings
+     (white label on it: 8.1:1). --accent-muted is decorative only, never
+     text on light backgrounds. Use --accent-text for accent-coloured text
+     on light backgrounds (>= 7:1 on paper, cream and accent-soft). */
+  --accent: #4a5059;
+  --accent-hover: #3a3f47;
+  --accent-soft: rgba(74, 80, 89, 0.1);
+  --accent-muted: #8a9099;
+  --accent-border: rgba(74, 80, 89, 0.22);
+  --accent-text: #3f444c;
+  --accent-text-hover: #2b2f35;
 
   --text: var(--slate-900);
-  --text-muted: var(--slate-500);
+  --text-muted: var(--slate-700);
   --bg: var(--paper);
   --bg-alt: var(--cream);
   --border: rgba(28, 36, 48, 0.1);
@@ -90,7 +97,7 @@ a {
   text-decoration: none;
 }
 
-a:hover { color: var(--accent); }
+a:hover { color: var(--accent-text-hover); }
 
 :focus-visible {
   outline: 2px solid var(--accent);
@@ -200,11 +207,15 @@ a:hover { color: var(--accent); }
   margin-top: auto;
   font-weight: 600;
   font-size: 0.9375rem;
-  color: var(--accent);
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.2em;
 }
 
 .text-link:hover {
-  color: var(--accent-hover);
+  color: var(--accent-text-hover);
+  text-decoration-thickness: 2px;
 }
 
 .text-link span {
@@ -337,7 +348,7 @@ a:hover { color: var(--accent); }
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* Option 1: charcoal band behind title only — cream page elsewhere */
@@ -394,7 +405,7 @@ a:hover { color: var(--accent); }
   text-align: center;
   color: var(--slate-700);
   background: var(--accent-soft);
-  border: 1px solid rgba(196, 120, 74, 0.22);
+  border: 1px solid var(--accent-border);
   border-radius: 999px;
 }
 
@@ -413,7 +424,7 @@ a:hover { color: var(--accent); }
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
   margin-bottom: var(--space-1);
 }
 
@@ -469,8 +480,8 @@ a:hover { color: var(--accent); }
   margin: 0 auto;
   text-align: center;
   padding: var(--space-5) var(--space-5);
-  background: linear-gradient(180deg, #fff9f4 0%, var(--white) 100%);
-  border: 1px solid rgba(196, 120, 74, 0.22);
+  background: linear-gradient(180deg, #f7f8f9 0%, var(--white) 100%);
+  border: 1px solid var(--accent-border);
   border-radius: var(--radius-lg, 16px);
   box-shadow: 0 4px 24px rgba(15, 20, 25, 0.05);
 }
@@ -481,7 +492,7 @@ a:hover { color: var(--accent); }
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .value-band-title {
@@ -571,7 +582,7 @@ a:hover { color: var(--accent); }
   font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: var(--accent);
+  color: var(--accent-text);
   font-variant-numeric: tabular-nums;
 }
 
@@ -621,7 +632,7 @@ a:hover { color: var(--accent); }
   margin-bottom: var(--space-5);
   border-radius: var(--radius);
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .audience-card h3 {
@@ -744,7 +755,7 @@ a:hover { color: var(--accent); }
   margin-bottom: var(--space-4);
   font-size: 1.1rem;
   font-family: var(--font-serif);
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
   border-radius: var(--radius-sm);
 }
@@ -789,7 +800,7 @@ a:hover { color: var(--accent); }
 
 .pricing-side.pricing-total {
   background: var(--accent-soft);
-  border: 1px solid rgba(196, 120, 74, 0.28);
+  border: 1px solid rgba(74, 80, 89, 0.28);
 }
 
 .pricing-amount {
@@ -803,7 +814,7 @@ a:hover { color: var(--accent); }
 }
 
 .pricing-total .pricing-amount {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .pricing-label {
@@ -818,7 +829,7 @@ a:hover { color: var(--accent); }
 .pricing-eq {
   font-family: var(--font-serif);
   font-size: 1.5rem;
-  color: var(--slate-400);
+  color: var(--slate-700);
   line-height: 1;
 }
 
@@ -863,9 +874,9 @@ a:hover { color: var(--accent); }
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
-  border: 1px solid rgba(196, 120, 74, 0.28);
+  border: 1px solid rgba(74, 80, 89, 0.28);
   border-radius: 999px;
   line-height: 1.4;
 }
@@ -882,15 +893,15 @@ a:hover { color: var(--accent); }
 
 .btn-secondary .demo-chip-inline {
   background: var(--accent-soft);
-  border-color: rgba(196, 120, 74, 0.28);
-  color: var(--accent);
+  border-color: rgba(74, 80, 89, 0.28);
+  color: var(--accent-text);
 }
 
 .cta-section .demo-chip-inline,
 .btn-secondary .demo-chip-inline.demo-chip-on-dark {
-  background: rgba(212, 160, 122, 0.18);
-  border-color: rgba(212, 160, 122, 0.35);
-  color: var(--accent-muted);
+  background: rgba(184, 194, 206, 0.12);
+  border-color: rgba(184, 194, 206, 0.35);
+  color: var(--slate-300);
 }
 
 .pricing-cta-actions .btn {
@@ -940,7 +951,7 @@ a:hover { color: var(--accent); }
 }
 
 .cta-section .eyebrow {
-  color: var(--accent-muted);
+  color: var(--slate-300);
 }
 
 .cta-section .section-header h2 {
@@ -991,7 +1002,7 @@ a:hover { color: var(--accent); }
 }
 
 .field input::placeholder {
-  color: var(--slate-500);
+  color: var(--slate-300);
 }
 
 .field input:hover {
@@ -1056,13 +1067,13 @@ a:hover { color: var(--accent); }
 
 .cta-section .btn-primary {
   background: var(--accent);
-  border-color: var(--accent);
+  border-color: var(--accent-muted);
   color: var(--white);
 }
 
 .cta-section .btn-primary:hover {
   background: var(--accent-hover);
-  border-color: var(--accent-hover);
+  border-color: var(--slate-300);
   color: var(--white);
 }
 
@@ -1081,7 +1092,7 @@ a:hover { color: var(--accent); }
   margin: 0;
   text-align: center;
   font-size: 0.8125rem;
-  color: var(--slate-500);
+  color: var(--slate-300);
 }
 
 .waitlist-success {
@@ -1094,7 +1105,7 @@ a:hover { color: var(--accent); }
   display: flex;
   justify-content: center;
   margin-bottom: var(--space-4);
-  color: var(--accent-muted);
+  color: var(--slate-300);
 }
 
 .waitlist-success h3 {
@@ -1115,7 +1126,7 @@ a:hover { color: var(--accent); }
 .site-footer {
   padding: var(--space-7) 0 var(--space-6);
   background: var(--slate-950);
-  color: var(--slate-400);
+  color: var(--slate-300);
 }
 
 .footer-inner {
@@ -1137,7 +1148,7 @@ a:hover { color: var(--accent); }
   font-size: 0.9rem;
   max-width: 280px;
   line-height: 1.5;
-  color: var(--slate-500);
+  color: var(--slate-300);
 }
 
 .footer-nav {
@@ -1149,7 +1160,7 @@ a:hover { color: var(--accent); }
 .footer-nav a {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--slate-400);
+  color: var(--slate-300);
 }
 
 .footer-nav a:hover { color: var(--cream); }
@@ -1159,7 +1170,7 @@ a:hover { color: var(--accent); }
   padding-top: var(--space-5);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   font-size: 0.8125rem;
-  color: var(--slate-500);
+  color: var(--slate-400);
 }
 
 /* Responsive */
