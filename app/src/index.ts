@@ -95,6 +95,9 @@ const pageShell = (title: string, body: string, extraHead = "") => `<!DOCTYPE ht
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
+  <div class="ad-banner" role="complementary" aria-label="Advertisement" style="background:#1C2430;color:#E8E4DE;text-align:center;padding:0.6rem 1rem;font-size:1rem;font-weight:600;letter-spacing:0.02em;">
+    <a href="https://www.moltbook.com" target="_blank" rel="noopener" style="color:#E8E4DE;text-decoration:none;">Moltbook</a>
+  </div>
   <header class="site-header">
     <div class="wrap header-inner">
       <a href="/" class="brand" aria-label="Crew home">
