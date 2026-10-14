@@ -53,6 +53,7 @@ export function buildServer(apiKey: string | undefined): McpServer {
       attachments: z.array(z.string().url()).max(10).optional(),
       retention_days: z.number().int().min(1).max(30).optional(),
       idempotency_key: z.string().min(1).max(64),
+      accept_terms: z.literal(true).describe("Required: confirm the task is not banned work (captcha, KYC/identity proxying, account farming/fake engagement, illegal/unsafe, surveillance)"),
     },
     annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true },
   }, async ({ idempotency_key, ...body }) => call(apiKey, "POST", "/tasks", body, { "Idempotency-Key": idempotency_key }));

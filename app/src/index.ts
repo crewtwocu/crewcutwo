@@ -824,6 +824,9 @@ app.get("/", (req, res) => {
         <textarea id="handoffHint" name="handoffHint" class="short" rows="3" maxlength="500" placeholder="Session, SimpleX, email relay, etc."></textarea>
         <p class="field-hint">Shown once with the connection code, then cleared. Max ~500 characters.</p>
       </div>
+      <div class="field">
+        <label><input type="checkbox" name="accept_terms" value="true" required /> I confirm this is not banned work: no CAPTCHA solving, no KYC/identity proxying, no account farming or fake engagement, nothing illegal or unsafe, no surveillance or photographing private people/property without consent. <a href="/terms">Terms</a></label>
+      </div>
       <button type="submit">${escapeHtml(submitLabel)}</button>
     </form>
     <section class="card contact-card" id="get-a-reply" aria-labelledby="contact-heading">
@@ -878,6 +881,11 @@ app.post("/create", async (req, res) => {
         "Rate limited",
         `<h1>Too many matches</h1><p>Max 10 creates per IP per 10 minutes. Try again later.</p><p><a href="/">← Back</a></p>`
       )
+    );
+  }
+  if (req.body?.accept_terms !== "true" && req.body?.accept_terms !== "on") {
+    return res.status(400).type("html").send(
+      pageShell("Agreement required", `<h1>Please tick the agreement</h1><p>You must confirm the job is not banned work. See <a href="/terms">terms</a>.</p><p><a href="/">← Back</a></p>`)
     );
   }
   try {

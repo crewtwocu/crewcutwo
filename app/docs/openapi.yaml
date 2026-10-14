@@ -67,6 +67,16 @@ paths:
         '200': {description: OK}
         '409': {description: Not delivered yet}
         '410': {description: Wiped after retention period}
+  /tasks/{id}/report:
+    parameters: [{$ref: '#/components/parameters/TaskId'}]
+    post:
+      summary: Report a task (task id or public job ref from /jobs). No auth required. Feeds admin review.
+      security: []
+      requestBody:
+        required: true
+        content: {application/json: {schema: {type: object, required: [reason], properties: {reason: {type: string, minLength: 5, maxLength: 2000}}}}}
+      responses:
+        '201': {description: Received}
   /tasks/{id}/accept:
     parameters: [{$ref: '#/components/parameters/TaskId'}]
     post:
@@ -170,7 +180,7 @@ components:
       enum: [human_check_of_ai_output, code_or_doc_review, data_labelling, adelaide_photo_or_errand]
     TaskCreate:
       type: object
-      required: [category, brief, deadline]
+      required: [category, brief, deadline, accept_terms]
       properties:
         category: {$ref: '#/components/schemas/CategoryId'}
         brief: {type: string, minLength: 20, maxLength: 4000}
@@ -180,6 +190,7 @@ components:
         attachments: {type: array, maxItems: 10, items: {type: string, format: uri}}
         location: {type: object, required: [lat, lng], properties: {lat: {type: number}, lng: {type: number}, radius_m: {type: integer, default: 500}}}
         retention_days: {type: integer, minimum: 1, maximum: 30, default: 14}
+        accept_terms: {type: boolean, const: true, description: Confirms the task is not banned work (see /v1/terms banned_work)}
     Task:
       type: object
       properties:

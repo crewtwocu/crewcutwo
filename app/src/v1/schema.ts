@@ -110,5 +110,22 @@ export function migrateV1(): void {
     last_error TEXT,
     created_at TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS v1_reports (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    source TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','closed')),
+    created_at TEXT NOT NULL
+  );
   `);
+  for (const sql of [
+    "ALTER TABLE v1_operators ADD COLUMN banned_at TEXT",
+    "ALTER TABLE v1_contractors ADD COLUMN banned_at TEXT",
+    "ALTER TABLE v1_tasks ADD COLUMN public_ref TEXT",
+    "ALTER TABLE v1_tasks ADD COLUMN terms_accepted_at TEXT",
+  ]) {
+    try { db.exec(sql); } catch { /* column exists */ }
+  }
+  db.exec("CREATE INDEX IF NOT EXISTS idx_v1_tasks_public_ref ON v1_tasks(public_ref)");
 }

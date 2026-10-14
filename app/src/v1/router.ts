@@ -9,7 +9,7 @@ import { nowMs } from "./clock.js";
 import * as core from "./core.js";
 import { ApiError, hmacHex, safeEqual } from "./util.js";
 import { deliverDueWebhooks } from "./webhooks.js";
-import { hardLimitsPage, jobsPage, termsPage } from "./pages.js";
+import { hardLimitsPage, jobsPage, reportPage, reportThanksPage, termsPage } from "./pages.js";
 import { migrateV1 } from "./schema.js";
 import { mountMcp } from "./mcp.js";
 
@@ -121,6 +121,14 @@ export function createV1Router(): express.Router {
     res.set("Cache-Control", "private, no-store").type(f.mime).send(f.data);
   });
 
+  // Report a task (public: from /jobs Report link by job ref, or by an operator with the task id). Feeds admin review.
+  r.post("/tasks/:id/report", express.urlencoded({ extended: false, limit: "16kb" }), rateLimit(10, 600_000), wrap((req, res) => {
+    const a = core.authenticateKey(bearer(req));
+    const out = core.reportTask(String(req.params.id), req.body?.reason, a ? `operator:${a.operatorId}` : "public");
+    if (req.is("application/x-www-form-urlencoded")) return res.type("html").send(reportThanksPage());
+    res.status(201).json(out);
+  }));
+
   // XMR Checkout webhook for entry fees (same shared-secret check as the match webhook).
   r.post("/webhooks/xmrcheckout", wrap(async (req, res) => {
     const secret = process.env.WEBHOOK_SECRET || process.env.XMRCHECKOUT_WEBHOOK_SECRET;
@@ -223,7 +231,7 @@ export function createV1Router(): express.Router {
   ad.post("/keys/:id/revoke", wrap((req, res) => res.json({ revoked: core.revokeApiKey(String(req.params.id)) })));
   ad.get("/review", (_req, res) => {
     const rows = db.prepare("SELECT id, category, mode, brief, location_json, screen_flags_json, deadline, created_at FROM v1_tasks WHERE status='in_review' ORDER BY created_at").all() as Record<string, string>[];
-    res.json({ data: rows.map((r) => ({ ...r, screen_flags: JSON.parse(r.screen_flags_json || "[]") })) });
+    res.json({ data: rows.map((r) => ({ ...r, screen_flags: JSON.parse(r.screen_flags_json || "[]") })), reports: core.openReports() });
   });
   ad.post("/tasks/:id/approve", wrap((req, res) => res.json(core.taskView(core.approveTask(String(req.params.id))))));
   ad.post("/tasks/:id/reject", wrap((req, res) => {
@@ -237,6 +245,10 @@ export function createV1Router(): express.Router {
     const { contractor, token } = core.inviteContractor(String(req.body?.handle || ""), cats, req.body || {});
     res.status(201).json({ contractor_id: contractor.id, handle: contractor.handle, token, note: "Shown once. Give privately to the contractor." });
   }));
+  ad.post("/reports/:id/close", wrap((req, res) => res.json(core.closeReport(String(req.params.id)))));
+  ad.get("/bans", (_req, res) => res.json(core.listBans()));
+  ad.post("/bans", wrap((req, res) => res.json(core.setBan(req.body || {}, true))));
+  ad.post("/unban", wrap((req, res) => res.json(core.setBan(req.body || {}, false))));
   ad.post("/sweep", wrap(async (_req, res) => res.json({ ...core.sweep(), webhooks_sent: await deliverDueWebhooks() })));
 
   r.use("/contractor", ct);
@@ -265,6 +277,7 @@ export function mountV1(app: express.Express, opts: { timers?: boolean } = {}): 
   mountMcp(app);
   app.get("/hard-limits", (_req, res) => res.type("html").send(hardLimitsPage()));
   app.get("/terms", (_req, res) => res.type("html").send(termsPage()));
+  app.get("/report/:ref", (req, res) => res.type("html").send(reportPage(String(req.params.ref))));
   app.get("/llms.txt", (_req, res) => {
     const p = path.join(__dirname, "..", "..", "docs", "llms.txt");
     if (!fs.existsSync(p)) return res.status(404).end();

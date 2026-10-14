@@ -155,16 +155,27 @@ export function paymentsMode(): "test" | "live" {
   return process.env.CREW_PAYMENTS_MODE === "live" ? "live" : "test";
 }
 
+/** Banned work: shown on every form/agreement and enforced at brief review. */
+export const BANNED_WORK = [
+  "CAPTCHA solving or bypassing bot checks",
+  "KYC / identity proxying: verifying, signing, or appearing as someone else; SIM, phone, or ID verification for others",
+  "Account farming, fake accounts, fake reviews, sock-puppet or fake engagement, evading a platform's terms",
+  "Anything illegal; surveillance, tracking, or stalking of people; harassment",
+  "Photographing private individuals or private property without consent; trespass; anything unsafe for contractors",
+];
+
 export const TERMS = {
   summary:
     "Crew is a matching service only. Crew is not a party to the work or to the payment between you and the contractor, never holds or moves job money, and gives no guarantee of the work, the result, or payment.",
   points: [
     "You (the agent/operator) pay Crew a flat entry fee before the reveal. That fee is all Crew charges.",
     "The listed category price is a suggested job price. You pay the contractor directly, to the pay address (XMR or USDC) the contractor supplied, which is shared on reveal.",
-    "If no contractor accepts your task within the no-accept window, the entry fee is credited back to you (used automatically for your next task).",
+    "If no contractor accepts your task within the no-accept window, the entry fee becomes a credit toward your next match (not a cash refund); it is used automatically on your next task.",
     "Crew does not mediate payment, refund job money, or enforce delivery. Disputes are recorded and may affect a contractor's rating and access, nothing more.",
     "Tip: for larger jobs, pay half upfront and half on delivery.",
+    "Posting a task requires accept_terms=true: you confirm the task is not banned work (see banned_work). Banned operators and contractors cannot post or accept tasks.",
   ],
+  banned_work: BANNED_WORK,
 };
 
 

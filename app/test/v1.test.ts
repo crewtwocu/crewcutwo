@@ -74,7 +74,7 @@ async function newContractor(handle: string, cats: string[], pay: Record<string,
   return r.json.token as string;
 }
 const deadline = (h = 96) => new Date(nowMs() + h * HOUR).toISOString();
-const checkBody = (extra: Record<string, unknown> = {}) => ({ category: "human_check_of_ai_output", brief: "Please fact-check this 3-paragraph AI summary for errors.", deadline: deadline(), ...extra });
+const checkBody = (extra: Record<string, unknown> = {}) => ({ category: "human_check_of_ai_output", brief: "Please fact-check this 3-paragraph AI summary for errors.", deadline: deadline(), accept_terms: true, ...extra });
 /** create + mock-pay fee (unless credit used) + approve */
 async function openTask(key: string, idem: string, body: Record<string, unknown> = checkBody()) {
   const c = await api("POST", "/v1/tasks", { token: key, headers: { "Idempotency-Key": idem }, body });
@@ -206,7 +206,7 @@ test("contractor: pay address required + validated, eligibility, invite-only", a
 test("photo errand: proof checks flag GPS mismatch", async () => {
   const { key } = await newOperator();
   const ct = await newContractor("adl_walker", ["adelaide_photo_or_errand"]);
-  const t = await openTask(key, "p1", { category: "adelaide_photo_or_errand", brief: "Photograph the public opening-hours sign at the Rundle Mall entrance.", deadline: deadline(), location: { lat: -34.9228, lng: 138.6025 } });
+  const t = await openTask(key, "p1", { category: "adelaide_photo_or_errand", brief: "Photograph the public opening-hours sign at the Rundle Mall entrance.", deadline: deadline(), accept_terms: true, location: { lat: -34.9228, lng: 138.6025 } });
   await api("POST", `/v1/contractor/tasks/${t.id}/claim`, { token: ct });
   assert.equal((await api("POST", `/v1/contractor/tasks/${t.id}/submit`, { token: ct, body: { result: { completed: true, notes: "done" } } })).status, 400);
   const sub = await api("POST", `/v1/contractor/tasks/${t.id}/submit`, { token: ct, body: { result: { completed: true, notes: "done", location: { lat: -34.95, lng: 138.6 }, captured_at: new Date(nowMs() + 60000).toISOString() }, files: [{ mime: "image/jpeg", data_base64: Buffer.from([0xff, 0xd8, 0xff]).toString("base64") }] } });
@@ -234,7 +234,7 @@ test("brief rejection credits the fee; credit is used on next task; hard-limit f
 test("dispute: recorded once, closes task (Crew not a party)", async () => {
   const { key } = await newOperator();
   const ct = await newContractor("rev_two", ["code_or_doc_review"]);
-  const t = await openTask(key, "d1", { category: "code_or_doc_review", brief: "Review this 200-line TypeScript module for bugs.", deadline: deadline() });
+  const t = await openTask(key, "d1", { category: "code_or_doc_review", brief: "Review this 200-line TypeScript module for bugs.", deadline: deadline(), accept_terms: true });
   await api("POST", `/v1/contractor/tasks/${t.id}/claim`, { token: ct });
   await api("POST", `/v1/contractor/tasks/${t.id}/submit`, { token: ct, body: { result: { summary: "ok", findings: [] } } });
   assert.equal((await api("POST", `/v1/tasks/${t.id}/dispute`, { token: key, body: { reason: "short" } })).status, 400);
@@ -247,7 +247,7 @@ test("dispute: recorded once, closes task (Crew not a party)", async () => {
 test("timers: no accept in 24h → fee credited; unpaid fee invoice expires; wipe after retention", async () => {
   const { key } = await newOperator();
   const ct = await newContractor("lab_three", ["data_labelling"]);
-  const body = { category: "data_labelling", brief: "Label these 50 product titles as food / not food.", deadline: deadline(24 * 10) };
+  const body = { category: "data_labelling", brief: "Label these 50 product titles as food / not food.", deadline: deadline(24 * 10), accept_terms: true };
   const a = await openTask(key, "t1", body);
   const b = await openTask(key, "t2", { ...body, retention_days: 1 });
   const unpaid = (await api("POST", "/v1/tasks", { token: key, headers: { "Idempotency-Key": "t3" }, body })).json;
@@ -331,7 +331,66 @@ test("in-app MCP endpoint: tools/list + list_categories over streamable HTTP", a
   assert.deepEqual(names, ["accept_result", "dispute_result", "get_result", "get_reveal", "get_task", "list_categories", "post_task"]);
   const r: any = await client.callTool({ name: "list_categories", arguments: {} });
   assert.equal(JSON.parse(r.content[0].text).data.length, 4);
-  const p: any = await client.callTool({ name: "post_task", arguments: { category: "data_labelling", brief: "Label 20 sentences as positive or negative sentiment.", deadline: new Date(nowMs() + 48 * HOUR).toISOString(), idempotency_key: "mcp-1" } });
+  const p: any = await client.callTool({ name: "post_task", arguments: { category: "data_labelling", brief: "Label 20 sentences as positive or negative sentiment.", deadline: new Date(nowMs() + 48 * HOUR).toISOString(), idempotency_key: "mcp-1", accept_terms: true } });
   assert.equal(JSON.parse(p.content[0].text).status, "awaiting_fee");
   await client.close();
+});
+
+test("accept_terms required on create; terms list banned work + credit wording", async () => {
+  const { key } = await newOperator();
+  const r = await api("POST", "/v1/tasks", { token: key, headers: { "Idempotency-Key": "at1" }, body: checkBody({ accept_terms: undefined }) });
+  assert.equal(r.status, 400);
+  assert.equal(r.json.error.code, "terms_not_accepted");
+  assert.equal((await api("POST", "/v1/tasks", { token: key, headers: { "Idempotency-Key": "at2" }, body: checkBody({ accept_terms: "yes" }) })).status, 400);
+  const t = (await api("GET", "/v1/terms")).json;
+  assert.ok(t.banned_work.length >= 5 && t.banned_work.some((b: string) => /CAPTCHA/.test(b)));
+  assert.ok(t.points.some((p: string) => /credit toward your next match \(not a cash refund\)/.test(p)));
+  const html = await (await fetch(base + "/terms")).text();
+  assert.ok(html.includes("Banned work") && html.includes("not a cash refund"));
+});
+
+test("ban list: banned operator key can't post; banned contractor can't claim; unban restores", async () => {
+  const { key } = await newOperator();
+  const acct = (await api("GET", "/v1/account", { token: key })).json;
+  const ct = await newContractor("ban_me", ["human_check_of_ai_output"]);
+  const t = await openTask(key, "b1");
+  assert.equal((await api("POST", "/v1/admin/bans", { headers: ADMIN, body: { contractor_handle: "ban_me" } })).status, 200);
+  const c = await api("POST", `/v1/contractor/tasks/${t.id}/claim`, { token: ct });
+  assert.equal(c.status, 403);
+  assert.equal(c.json.error.code, "banned");
+  assert.equal((await api("POST", "/v1/admin/bans", { headers: ADMIN, body: { api_key_id: acct.key.id } })).json.type, "operator");
+  const p = await api("POST", "/v1/tasks", { token: key, headers: { "Idempotency-Key": "b2" }, body: checkBody() });
+  assert.equal(p.status, 403);
+  assert.equal(p.json.error.code, "banned");
+  const bans = (await api("GET", "/v1/admin/bans", { headers: ADMIN })).json;
+  assert.ok(bans.contractors.some((x: any) => x.handle === "ban_me") && bans.operators.some((x: any) => x.id === acct.operator_id));
+  assert.equal((await api("POST", "/v1/admin/bans", { headers: ADMIN, body: {} })).status, 400);
+  await api("POST", "/v1/admin/unban", { headers: ADMIN, body: { contractor_handle: "ban_me" } });
+  await api("POST", "/v1/admin/unban", { headers: ADMIN, body: { operator_id: acct.operator_id } });
+  assert.equal((await api("POST", `/v1/contractor/tasks/${t.id}/claim`, { token: ct })).status, 200);
+  assert.equal((await api("POST", "/v1/tasks", { token: key, headers: { "Idempotency-Key": "b3" }, body: checkBody() })).status, 201);
+});
+
+test("report: API by task id, public form via /jobs ref; feeds admin review", async () => {
+  const { key } = await newOperator();
+  const t = await openTask(key, "rp1");
+  const r1 = await api("POST", `/v1/tasks/${t.id}/report`, { token: key, body: { reason: "Looks like account farming" } });
+  assert.equal(r1.status, 201);
+  assert.equal((await api("POST", `/v1/tasks/${t.id}/report`, { body: { reason: "x" } })).status, 400);
+  assert.equal((await api("POST", `/v1/tasks/job_nope/report`, { body: { reason: "valid reason" } })).status, 404);
+  const jobsHtml = await (await fetch(base + "/jobs")).text();
+  const ref = (jobsHtml.match(/href="\/report\/(job_[a-f0-9]+)"/) || [])[1];
+  assert.ok(ref, "Report link on /jobs");
+  assert.ok(!jobsHtml.includes(t.id));
+  const form = await (await fetch(`${base}/report/${ref}`)).text();
+  assert.ok(form.includes(`action="/v1/tasks/${ref}/report"`));
+  const sub = await fetch(`${base}/v1/tasks/${ref}/report`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: "reason=" + encodeURIComponent("Banned work: captcha") });
+  assert.equal(sub.status, 200);
+  assert.ok((await sub.text()).includes("Thanks"));
+  const rv = (await api("GET", "/v1/admin/review", { headers: ADMIN })).json;
+  const mine = rv.reports.filter((x: any) => x.task_id === t.id);
+  assert.equal(mine.length, 2);
+  assert.ok(mine.some((x: any) => x.source === "public") && mine.some((x: any) => x.source.startsWith("operator:")));
+  await api("POST", `/v1/admin/reports/${mine[0].id}/close`, { headers: ADMIN });
+  assert.equal((await api("GET", "/v1/admin/review", { headers: ADMIN })).json.reports.filter((x: any) => x.task_id === t.id).length, 1);
 });

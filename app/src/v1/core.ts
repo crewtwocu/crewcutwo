@@ -24,7 +24,7 @@ export type TaskRow = {
   delivered_at: string | null; closed_at: string | null; wipe_at: string | null; wiped_at: string | null;
 };
 
-export type Operator = { id: string; label: string | null; webhook_secret: string; retention_days: number | null; fee_credits: number; created_at: string };
+export type Operator = { id: string; label: string | null; webhook_secret: string; retention_days: number | null; fee_credits: number; created_at: string; banned_at: string | null };
 
 // ---------- operators & keys ----------
 
@@ -60,7 +60,7 @@ export function authenticateKey(presented: string): AuthedKey | null {
 
 // ---------- contractors ----------
 
-export type Contractor = { id: string; handle: string; pay_xmr: string | null; pay_usdc: string | null; pay_usdc_network: string | null; categories_json: string; active: number };
+export type Contractor = { id: string; banned_at: string | null; handle: string; pay_xmr: string | null; pay_usdc: string | null; pay_usdc_network: string | null; categories_json: string; active: number };
 
 const XMR_RE = /^[48][1-9A-HJ-NP-Za-km-z]{94}$|^4[1-9A-HJ-NP-Za-km-z]{105}$/;
 const EVM_RE = /^0x[0-9a-fA-F]{40}$/;
@@ -145,7 +145,7 @@ export function screenBrief(brief: string): string[] {
 
 export type CreateTaskInput = {
   category?: unknown; brief?: unknown; budget_usd?: unknown; deadline?: unknown; callback_url?: unknown;
-  location?: unknown; attachments?: unknown; retention_days?: unknown;
+  location?: unknown; attachments?: unknown; retention_days?: unknown; accept_terms?: unknown;
 };
 
 function validateCreate(body: CreateTaskInput) {
@@ -200,8 +200,10 @@ export const createTask = db.transaction((a: AuthedKey, idemKey: string, body: C
   }
   if (prior) db.prepare("DELETE FROM v1_idempotency WHERE operator_id=? AND key=?").run(a.operatorId, idemKey);
 
-  const v = validateCreate(body);
   const op = getOperator(a.operatorId)!;
+  if (op.banned_at) throw new ApiError(403, "banned", "this operator is banned from posting tasks");
+  if (body.accept_terms !== true) throw new ApiError(400, "terms_not_accepted", "accept_terms must be true: confirm the task is not banned work (GET /v1/terms → banned_work)");
+  const v = validateCreate(body);
   const id = newId("task");
   const now = nowIso();
   const useCredit = op.fee_credits > 0;
@@ -213,6 +215,7 @@ export const createTask = db.transaction((a: AuthedKey, idemKey: string, body: C
   ).run(id, op.id, a.mode, v.cat.id, v.brief, JSON.stringify(v.attachments), v.location ? JSON.stringify(v.location) : null, JSON.stringify(screenBrief(v.brief)),
     v.cat.price_usd_cents, policy.entryFeeCents(), useCredit ? "paid_by_credit" : "pending", useCredit ? "in_review" : "awaiting_fee",
     v.deadline, v.callback, v.retentionDays ?? op.retention_days ?? policy.wipeDaysDefault(), now, useCredit ? now : null);
+  db.prepare("UPDATE v1_tasks SET public_ref=?, terms_accepted_at=? WHERE id=?").run(`job_${hmacHex(pseudonymSecret(), "pub:" + id).slice(0, 10)}`, now, id);
   db.prepare("INSERT INTO v1_idempotency (operator_id, key, body_hash, task_id, created_at) VALUES (?,?,?,?,?)").run(op.id, idemKey, bodyHash, id, now);
   recordEvent(id, "task.submitted");
   if (useCredit) recordEvent(id, "task.fee_paid");
@@ -331,6 +334,7 @@ export function listClaimedByContractor(c: Contractor) {
 export const claimTask = db.transaction((c: Contractor, id: string) => {
   const t = getTask(id);
   if (!t) throw new ApiError(404, "not_found", "task not found");
+  if (c.banned_at) throw new ApiError(403, "banned", "this contractor is banned from accepting tasks");
   if (!contractorCategories(c).includes(t.category)) throw new ApiError(403, "forbidden", "not eligible for this category");
   if (!c.pay_xmr && !c.pay_usdc) throw new ApiError(400, "invalid_request", "set a pay address first: PUT /v1/contractor/profile {pay_xmr | pay_usdc + pay_usdc_network}");
   if (t.status !== "open") throw new ApiError(409, "conflict", "task is not open (already accepted or closed)");
@@ -504,9 +508,10 @@ export const sweep = db.transaction(() => {
 
 export function publicJobs(includeTest: boolean, limit = 100) {
   const rows = db
-    .prepare(`SELECT category, suggested_price_cents, status, created_at, delivered_at FROM v1_tasks WHERE status NOT IN ('awaiting_fee','in_review','rejected','cancelled') ${includeTest ? "" : "AND mode='live'"} ORDER BY created_at DESC LIMIT ?`)
-    .all(limit) as { category: string; suggested_price_cents: number; status: string; created_at: string; delivered_at: string | null }[];
+    .prepare(`SELECT public_ref, category, suggested_price_cents, status, created_at, delivered_at FROM v1_tasks WHERE status NOT IN ('awaiting_fee','in_review','rejected','cancelled') ${includeTest ? "" : "AND mode='live'"} ORDER BY created_at DESC LIMIT ?`)
+    .all(limit) as { public_ref: string | null; category: string; suggested_price_cents: number; status: string; created_at: string; delivered_at: string | null }[];
   return rows.map((r) => ({
+    ref: r.public_ref,
     category: r.category,
     suggested_price_usd: r.suggested_price_cents / 100,
     status: r.status,
@@ -520,4 +525,50 @@ export function publicRatings(includeTest: boolean) {
               FROM v1_tasks t JOIN v1_contractors c ON c.id = t.contractor_id
               WHERE t.rating IS NOT NULL ${includeTest ? "" : "AND t.mode='live'"} GROUP BY c.id ORDER BY ratings DESC`)
     .all() as { pseudonym: string; average: number; ratings: number }[];
+}
+
+// ---------- bans & reports ----------
+
+/** Ban by API key id (bans its operator), operator id, or contractor handle (pseudonym). */
+export function setBan(target: { api_key_id?: unknown; operator_id?: unknown; contractor_handle?: unknown }, banned: boolean) {
+  const at = banned ? nowIso() : null;
+  if (typeof target.api_key_id === "string" || typeof target.operator_id === "string") {
+    let opId = target.operator_id as string | undefined;
+    if (typeof target.api_key_id === "string") {
+      const k = db.prepare("SELECT operator_id FROM v1_api_keys WHERE id=?").get(target.api_key_id) as { operator_id: string } | undefined;
+      if (!k) throw new ApiError(404, "not_found", "api key not found");
+      opId = k.operator_id;
+    }
+    if (db.prepare("UPDATE v1_operators SET banned_at=? WHERE id=?").run(at, opId).changes !== 1) throw new ApiError(404, "not_found", "operator not found");
+    return { type: "operator", operator_id: opId, banned };
+  }
+  if (typeof target.contractor_handle === "string") {
+    if (db.prepare("UPDATE v1_contractors SET banned_at=? WHERE handle=?").run(at, target.contractor_handle).changes !== 1) throw new ApiError(404, "not_found", "contractor not found");
+    return { type: "contractor", contractor_handle: target.contractor_handle, banned };
+  }
+  throw new ApiError(400, "invalid_request", "give api_key_id, operator_id, or contractor_handle");
+}
+export function listBans() {
+  return {
+    operators: db.prepare("SELECT id, label, banned_at FROM v1_operators WHERE banned_at IS NOT NULL").all(),
+    contractors: db.prepare("SELECT handle, banned_at FROM v1_contractors WHERE banned_at IS NOT NULL").all(),
+  };
+}
+
+/** Report a task by internal id or public job ref. Feeds the admin review list. */
+export function reportTask(idOrRef: string, reason: unknown, source: string) {
+  const t = db.prepare("SELECT id FROM v1_tasks WHERE id=? OR public_ref=?").get(idOrRef, idOrRef) as { id: string } | undefined;
+  if (!t) throw new ApiError(404, "not_found", "task not found");
+  if (typeof reason !== "string" || reason.trim().length < 5 || reason.length > 2000) throw new ApiError(400, "invalid_request", "reason must be 5-2000 chars");
+  const id = newId("rpt");
+  db.prepare("INSERT INTO v1_reports (id, task_id, reason, source, created_at) VALUES (?,?,?,?,?)").run(id, t.id, reason.trim(), source, nowIso());
+  return { id, status: "received" };
+}
+export function openReports() {
+  return db.prepare(`SELECT r.id, r.task_id, r.reason, r.source, r.created_at, t.category, t.status AS task_status, t.public_ref
+                     FROM v1_reports r JOIN v1_tasks t ON t.id = r.task_id WHERE r.status='open' ORDER BY r.created_at`).all();
+}
+export function closeReport(id: string) {
+  if (db.prepare("UPDATE v1_reports SET status='closed' WHERE id=?").run(id).changes !== 1) throw new ApiError(404, "not_found", "report not found");
+  return { id, status: "closed" };
 }

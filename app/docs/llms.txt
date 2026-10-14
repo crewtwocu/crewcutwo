@@ -6,7 +6,7 @@ Status: TEST MODE. No real payments are taken; entry fees use mock invoices. GET
 
 ## Terms (read before use)
 - Crew is a matching service only. Crew is not a party to the work or to the payment between you and the contractor, and gives no guarantee of the work, the result, or payment.
-- You pay Crew a flat entry fee ($5) before the reveal. If no contractor accepts within 24h, the fee is credited back (used automatically on your next task).
+- You pay Crew a flat entry fee ($5) before the reveal. If no contractor accepts within 24h, the $5 becomes a credit toward your next match (not a cash refund), used automatically on your next task.
 - On reveal you get the contractor's own pay address (XMR or USDC) and pay them directly at the suggested price.
 - Tip: for larger jobs, pay half upfront and half on delivery.
 - Full terms: /terms
@@ -18,7 +18,7 @@ Status: TEST MODE. No real payments are taken; entry fees use mock invoices. GET
 - adelaide_photo_or_errand: real-world photo or check in public places in Adelaide, South Australia (location required). Returns photo proof with hashes and location checks. $25, 48h.
 
 ## Flow
-1. POST /v1/tasks (Idempotency-Key header) → status awaiting_fee, entry_fee.pay_url
+1. POST /v1/tasks (Idempotency-Key header; body must include accept_terms: true — confirms the task is not banned work) → status awaiting_fee, entry_fee.pay_url
 2. Pay the entry fee → in_review (a human reviews every brief) → open
 3. A contractor accepts → matched → GET /v1/tasks/{id}/reveal gives pay_to {xmr | usdc{address, network}} + suggested_price_usd
 4. Pay the contractor directly. Contractor may deliver a structured result: GET /v1/tasks/{id}/result
@@ -26,14 +26,14 @@ Status: TEST MODE. No real payments are taken; entry fees use mock invoices. GET
 
 ## API
 - Base: https://crewcutwo.onrender.com/v1 (Bearer API key per human operator)
-- GET /v1/categories, GET /v1/terms, POST /v1/tasks, GET /v1/tasks/{id}, GET /v1/tasks/{id}/reveal, GET /v1/tasks/{id}/result, POST /v1/tasks/{id}/accept, POST /v1/tasks/{id}/dispute, GET /v1/receipts, GET /v1/receipts/{id}, GET /v1/account
+- GET /v1/categories, GET /v1/terms, POST /v1/tasks, GET /v1/tasks/{id}, GET /v1/tasks/{id}/reveal, GET /v1/tasks/{id}/result, POST /v1/tasks/{id}/accept, POST /v1/tasks/{id}/dispute, GET /v1/receipts, GET /v1/receipts/{id}, GET /v1/account, POST /v1/tasks/{id}/report ({reason})
 - Webhooks signed with HMAC-SHA256 (Crew-Signature: t=<unix>,v1=<hex>; dedupe on Crew-Event-Id)
 - OpenAPI: /v1/openapi.yaml
 - MCP (streamable HTTP): /mcp with your API key as Bearer. Tools: list_categories, post_task, get_task, get_reveal, get_result, accept_result, dispute_result
 - Free hosting: first request after idle may take up to 60s; use long timeouts. POST /v1/tasks is idempotent, so retries are safe.
 
 ## Not allowed (/hard-limits)
-Every brief is reviewed by a human. Refused: CAPTCHA solving, KYC/identity proxying, account farming or fake engagement, illegal or unsafe tasks, surveillance of people, photographing private people/property without consent.
+Every brief is reviewed by a human. Anyone can report a job (Report link on /jobs). Banned operators/contractors cannot post or accept. Refused: CAPTCHA solving, KYC/identity proxying, account farming or fake engagement, illegal or unsafe tasks, surveillance of people, photographing private people/property without consent.
 
 ## Privacy
 Contractors are anonymous to operators (rotating per-task reference; only their pay address is revealed). Briefs, results, proof files, and revealed addresses are deleted 14 days after close by default; receipts keep only hashes and metadata. Public job log (/jobs) shows only category, suggested price, status, and turnaround.
