@@ -183,71 +183,6 @@ function contactFormScript(): string {
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
   }
 
-  function showIssued(ticketId) {
-    hidePayPanels();
-    if (!ticketPanel) return;
-    ticketPanel.hidden = false;
-    ticketPanel.innerHTML =
-      "<p class=\\"contact-ticket-ok\\"><strong>Callback ticket issued.</strong></p>" +
-      "<p class=\\"muted\\">Your only touchpoint from here is the call itself. Keep this ticket id:</p>" +
-      "<p class=\\"mono contact-ticket-id\\">" + ticketId + "</p>";
-    showStatus("Paid — ticket issued.", true);
-  }
-
-  function showPayPending(data) {
-    hidePayPanels();
-    if (!payPanel) return;
-    payPanel.hidden = false;
-    var payUrl = data.payUrl || "#";
-    var ticketId = data.ticketId || data.requestId || "";
-    payPanel.innerHTML =
-      "<p><strong>Your five dollars secures your callback.</strong> Pay to issue the ticket — nothing is saved until then; after pay we notify ops once and wipe the number.</p>" +
-      "<p><a class=\\"btn\\" href=\\"" + payUrl + "\\">Pay $5 now</a></p>" +
-      "<p class=\\"muted mono\\">Ticket (pending): " + ticketId + "</p>" +
-      "<p class=\\"muted\\" id=\\"contact-pay-wait\\">Waiting for payment…</p>";
-    showStatus("Your five dollars secures your callback — pay to issue the ticket.", true);
-    startPoll(ticketId);
-  }
-
-  function startPoll(ticketId) {
-    if (!ticketId) return;
-    if (pollTimer) clearInterval(pollTimer);
-    var tries = 0;
-    function tick() {
-      tries++;
-      fetch("/api/callback-tickets/" + encodeURIComponent(ticketId), {
-        headers: { "Accept": "application/json" }
-      })
-        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-        .then(function (res) {
-          if (!res.ok || !res.j) return;
-          if (res.j.status === "issued") {
-            showIssued(res.j.ticketId || ticketId);
-            return;
-          }
-          if (res.j.status === "expired" || res.j.status === "failed") {
-            hidePayPanels();
-            showStatus("Ticket " + res.j.status + ". Start again if you still need a callback.", false);
-            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-          }
-        })
-        .catch(function () { /* keep polling */ });
-      if (tries > 200 && pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-    }
-    tick();
-    pollTimer = setInterval(tick, 3000);
-  }
-
-  // Resume a pending ticket after returning from payment
-  try {
-    var params = new URLSearchParams(window.location.search);
-    var resume = params.get("callbackTicket");
-    if (resume) {
-      startPoll(resume);
-      showStatus("Checking payment…", true);
-    }
-  } catch (e) { /* ignore */ }
-
   form.addEventListener("submit", function (ev) {
     ev.preventDefault();
     var m = method();
@@ -264,7 +199,7 @@ function contactFormScript(): string {
 
     if (submitBtn) submitBtn.disabled = true;
     hidePayPanels();
-    showStatus(m === "callback" ? "Preparing payment…" : "Sending…", true);
+    showStatus("Sending…", true);
 
     fetch("/api/contact", {
       method: "POST",
@@ -280,10 +215,6 @@ function contactFormScript(): string {
         return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
       })
       .then(function (res) {
-        if (res.ok && res.j && res.j.ok && res.j.paymentRequired) {
-          showPayPending(res.j);
-          return;
-        }
         if (res.ok && res.j && res.j.ok) {
           showStatus("Sent. We’ll be in touch.", true);
           form.reset();
@@ -797,7 +728,7 @@ app.get("/", (req, res) => {
       `
     <h1>${escapeHtml(heading)}</h1>
     ${nudge}
-    <p class="lede">Each side pays a flat <strong>$5</strong>. When both are paid, Crew reveals a one-time connection code — then forgets it. No sticky profiles. No records kept after reveal.</p>
+    <p class="lede">Each side pays a flat <strong>$5</strong>. When both are paid, Crew reveals a one-time connection code — then forgets it. No sticky profiles. We keep only what’s needed to complete the match, then clear it.</p>
     <p class="trust-strip" role="note">
       <span>Complete anonymity</span><span class="dot" aria-hidden="true">·</span>
       <span>$5 / $5</span><span class="dot" aria-hidden="true">·</span>
@@ -806,7 +737,7 @@ app.get("/", (req, res) => {
     </p>
     <aside class="value-note" aria-label="How work is set">
       <p class="value-note-headline">The site connects you. You set the work.</p>
-      <p>Contractors include people and capable agents that can run a job nearly end-to-end once you set the brief. Task, delivery, and parameters stay with you and who you connect with.</p>
+      <p>Contractors include people and capable agents that can run a job nearly end-to-end once you set the brief. Crew connects you. You set the task, delivery and terms with whoever you connect with.</p>
       <p class="value-note-boundary">Crew matches you for useful work you define — not a blank cheque, and not an anything-goes hire shop.</p>
     </aside>
     <form method="post" action="/create" class="card">

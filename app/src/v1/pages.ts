@@ -1,4 +1,4 @@
-import { categories, policy, TERMS } from "./config.js";
+import { policy } from "./config.js";
 
 function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -12,25 +12,22 @@ function shell(title: string, body: string): string {
 }
 
 export function hardLimitsPage(): string {
-  const cats = categories()
-    .map((c) => `<tr><td><code>${esc(c.id)}</code></td><td>${esc(c.description)}</td><td>$${(c.price_usd_cents / 100).toFixed(2)}</td><td>${c.sla_hours}h</td></tr>`)
-    .join("");
   return shell(
     "Hard limits",
     `<h1>Crew hard limits</h1>
-<p>Every brief is reviewed by a human before it goes live. Crew will refuse these tasks and will not quietly do them:</p>
+<p><strong>Payments are not open yet. Nothing is charged.</strong></p>
+<p>Crew will not match these jobs:</p>
 <ul>
-<li>No CAPTCHA solving or bypassing bot checks.</li>
-<li>No KYC or identity proxying: no verifying, signing, or appearing as someone else; no SIM, phone, or ID verification for others.</li>
-<li>No account farming, fake accounts, fake reviews, sock-puppet engagement, or evading a platform's terms.</li>
-<li>Nothing illegal; no surveillance, tracking, or stalking of people; no photographing private individuals or private property without consent; no trespass; nothing unsafe for contractors.</li>
-<li>Photo errands: public places only. Bystanders' faces are not the subject.</li>
+<li>Solving CAPTCHAs or getting around bot checks.</li>
+<li>Identity proxying: verifying, signing or appearing as someone else, including SIM, phone or ID checks for other people.</li>
+<li>Account farming, fake accounts, fake reviews, or fake engagement.</li>
+<li>Anything illegal, unsafe, or that involves harassing, tracking or watching people.</li>
+<li>Photographing private people or private property without consent, or trespassing. Photo errands are public places only.</li>
 </ul>
-<p><strong>Refusal = credit.</strong> A refused or removed brief has its entry fee credited back. Repeated abuse means the API key is revoked.</p>
-<h2>Task types and suggested prices</h2>
-<p>Prices are suggested job prices that you pay the contractor directly. Crew only charges a flat $${(policy.entryFeeCents() / 100).toFixed(2)} entry fee.</p>
-<table><tr><th>Type</th><th>What</th><th>Suggested price</th><th>Turnaround</th></tr>${cats}</table>
-<p>See <a href="/terms">terms</a>: ${esc(TERMS.summary)}</p>`
+<p>Matches that break these rules are cancelled.</p>
+<h2>What it costs</h2>
+<p>When payments open, each side pays a flat $${(policy.entryFeeCents() / 100).toFixed(2)} to connect, one time. That is all Crew charges. Any price for the work itself is agreed directly between you and whoever you connect with.</p>
+<p>See the <a href="/terms">terms</a>.</p>`
   );
 }
 
