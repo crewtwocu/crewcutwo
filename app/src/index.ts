@@ -64,7 +64,7 @@ function escapeHtml(s: string): string {
 function formatExpiryLocal(iso: string | null | undefined): string {
   if (!iso) return "";
   try {
-    return new Date(iso).toLocaleString();
+    return new Date(iso).toLocaleString("en-AU", { timeZone: "UTC", dateStyle: "medium", timeStyle: "short" }) + " UTC";
   } catch {
     return iso;
   }
@@ -99,9 +99,6 @@ const pageShell = (title: string, body: string, extraHead = "") => `<!DOCTYPE ht
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
-  <div class="ad-banner" role="complementary" aria-label="Advertisement" style="background:#1C2430;color:#E8E4DE;text-align:center;padding:0.6rem 1rem;font-size:1rem;font-weight:600;letter-spacing:0.02em;">
-    <a href="https://www.moltbook.com" target="_blank" rel="noopener" style="color:#E8E4DE;text-decoration:none;">Moltbook</a>
-  </div>
   <header class="site-header">
     <div class="wrap header-inner">
       <a href="/" class="brand" aria-label="Crew home">
@@ -161,7 +158,7 @@ function contactFormScript(): string {
     if (emailInput) emailInput.required = isEmail;
     if (phoneInput) phoneInput.required = !isEmail;
     if (submitBtn) {
-      submitBtn.textContent = isEmail ? "Send" : "Continue — $5 secures callback";
+      submitBtn.textContent = isEmail ? "Send" : "Send";
     }
     var hint = document.getElementById("contact-callback-hint");
     if (hint) hint.hidden = isEmail;
@@ -241,7 +238,7 @@ function contactFormScript(): string {
     pollTimer = setInterval(tick, 3000);
   }
 
-  // Resume from returnTo after mock/live pay
+  // Resume a pending ticket after returning from payment
   try {
     var params = new URLSearchParams(window.location.search);
     var resume = params.get("callbackTicket");
@@ -405,7 +402,7 @@ function pollScript(matchId: string, side?: "contractor" | "operator"): string {
     var mins = Math.floor(left / 60000);
     var secs = Math.floor((left % 60000) / 1000);
     expiryEl.textContent =
-      "Expires in " + mins + "m " + secs + "s (" + new Date(expiresAt).toLocaleString() + ")";
+      "Expires in " + mins + "m " + secs + "s (" + new Date(expiresAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short", timeZoneName: "short" }) + ")";
   }
 
   function updateInvoices(invoices, status) {
@@ -502,6 +499,10 @@ app.get("/health", (_req, res) => {
  */
 app.post("/api/contact", async (req, res) => {
   const ip = clientIp(req);
+  if (!isLiveMode() && req.body?.method === "callback") {
+    redactContactBody(req.body);
+    return res.status(400).json({ ok: false, error: "callback_unavailable", message: "Callbacks open when payments do. Choose email reply." });
+  }
   try {
     const result = await handleContactRequest(req.body || {}, ip);
     redactContactBody(req.body);
@@ -822,7 +823,7 @@ app.get("/", (req, res) => {
       <div class="field">
         <label for="handoffHint">How should the other side reach you after both pay? <span class="muted">(optional)</span></label>
         <textarea id="handoffHint" name="handoffHint" class="short" rows="3" maxlength="500" placeholder="Session, SimpleX, email relay, etc."></textarea>
-        <p class="field-hint">Shown once with the connection code, then cleared. Max ~500 characters.</p>
+        <p class="field-hint">Shown once with the connection code, then cleared. Up to 500 characters.</p>
       </div>
       <div class="field">
         <label><input type="checkbox" name="accept_terms" value="true" required /> I confirm this is not banned work: no CAPTCHA solving, no KYC/identity proxying, no account farming or fake engagement, nothing illegal or unsafe, no surveillance or photographing private people/property without consent. <a href="/terms">Terms</a></label>
@@ -831,17 +832,13 @@ app.get("/", (req, res) => {
     </form>
     <section class="card contact-card" id="get-a-reply" aria-labelledby="contact-heading">
       <h2 id="contact-heading">Get a reply</h2>
-      <p class="muted contact-lede">Prefer a human? Ask Crew to email you back (free), or request a callback — <strong>your five dollars secures your callback</strong>. Nothing sticky — no address book.</p>
+      <p class="muted contact-lede">Prefer a human? Ask Crew to email you back — free. Nothing sticky — no address book.</p>
       <form id="contact-form" class="contact-form" novalidate>
         <fieldset class="contact-method">
           <legend class="sr-only">How should we reach you?</legend>
           <label class="choice">
             <input type="radio" name="method" value="email" checked />
             <span>Email me back</span>
-          </label>
-          <label class="choice">
-            <input type="radio" name="method" value="callback" />
-            <span>Callback ticket ($5)</span>
           </label>
         </fieldset>
         <div class="field" data-contact-email>
@@ -851,7 +848,6 @@ app.get("/", (req, res) => {
         <div class="field" data-contact-phone hidden>
           <label for="contact-phone">Phone</label>
           <input id="contact-phone" name="phone" type="tel" autocomplete="tel" maxlength="20" placeholder="+61 …" />
-          <p id="contact-callback-hint" class="field-hint" hidden>Your five dollars secures your callback. Pay → ticket issued → we call once. Number held only until payment, then wiped — never in a database.</p>
         </div>
         <div class="field">
           <label for="contact-note">Note <span class="muted">(optional, one line)</span></label>
@@ -867,7 +863,7 @@ app.get("/", (req, res) => {
         <div id="contact-ticket-panel" class="contact-ticket-panel" hidden></div>
       </form>
     </section>
-    <p class="page-nav muted">Invoices expire after ~1 hour if unpaid. <a href="${MARKETING_URL}">Learn how Crew works →</a></p>
+    <p class="page-nav muted">Payments are not open yet — nothing is charged. Unpaid matches expire after about an hour. <a href="${MARKETING_URL}">Learn how Crew works →</a></p>
   ` + contactFormScript()
     )
   );
@@ -989,11 +985,10 @@ function renderSidePage(matchId: string, side: "contractor" | "operator", res: e
     payBlock = `<p class="ok">Your $5 is paid.</p>`;
   } else if (closed) {
     payBlock = `<p class="warn" data-pay-encourage>${peek.status === "expired" ? "Expired" : "Cancelled"} — do not pay.</p>`;
-  } else if (mockPayAllowed()) {
-    payBlock = `
-      <span data-pay-encourage>
-      <a class="btn" href="/mock-pay/${encodeURIComponent(myInv.id)}?returnTo=${encodeURIComponent(`/m/${matchId}/${side}`)}">Mock pay $5</a>
-      <a class="link" href="${escapeHtml(myInv.payUrl)}" target="_blank" rel="noopener">pay link</a>
+  } else if (!isLiveMode()) {
+    payBlock = `<span data-pay-encourage>
+      <p><button type="button" class="btn" disabled aria-disabled="true">Payments opening soon</button></p>
+      <p class="muted">We're finishing payments. Your match is saved; nothing is charged yet.</p>
       </span>`;
   } else {
     payBlock = `<span data-pay-encourage><a class="btn" href="${escapeHtml(myInv.payUrl)}" target="_blank" rel="noopener">Pay $5</a></span>`;
@@ -1022,7 +1017,7 @@ function renderSidePage(matchId: string, side: "contractor" | "operator", res: e
 
     <div class="card" data-invoice-side="${side}">
       <h2>Your payment</h2>
-      <p>Amount: <strong>$5</strong> · Status: <span data-inv-status>${escapeHtml(myInv?.status || "?")}</span></p>
+      <p>Amount: <strong>$5</strong> · Status: <span data-inv-status>${escapeHtml(!isLiveMode() && myInv?.status !== "paid" ? "not open yet" : myInv?.status || "?")}</span></p>
       <div data-inv-action>${payBlock}</div>
     </div>
 

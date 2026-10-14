@@ -351,6 +351,11 @@ a:hover { color: var(--accent-text-hover); }
   color: var(--accent-text);
 }
 
+.hero-eyebrow {
+  display: block;
+  text-align: center;
+}
+
 /* Option 1: charcoal band behind title only — cream page elsewhere */
 .title-band {
   display: inline-block;

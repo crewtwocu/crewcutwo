@@ -184,7 +184,7 @@ test("full flow: fee → review → contractor accepts → reveal pay address �
   const html = await (await fetch(base + "/jobs")).text();
   assert.ok(html.includes("human_check_of_ai_output"));
   assert.ok(!html.includes("fact-check this") && !html.includes(t.id) && !html.includes(EVM));
-  assert.ok(html.includes("ada_checks") && html.includes("4.00 / 5"));
+  assert.ok(!/rating/i.test(html));
   assert.ok(!JSON.stringify((await api("GET", "/v1/public/jobs")).json).includes(t.id));
 });
 
@@ -314,7 +314,7 @@ test("x402 disabled; xmr webhook refuses in test mode; live keys still get mock 
 
 test("public pages: terms, hard limits, jobs", async () => {
   const terms = await (await fetch(base + "/terms")).text();
-  assert.ok(terms.includes("matching service only") && terms.includes("half upfront") && terms.includes("TEST MODE"));
+  assert.ok(terms.includes("not a party") && terms.includes("Nothing is charged") && !terms.includes("TEST MODE") && !/xmr|usdc|rating|accept_terms|banned_work/i.test(terms));
   const h = await (await fetch(base + "/hard-limits")).text();
   assert.ok(h.includes("CAPTCHA") && h.includes("$5.00") && !h.includes("80%"));
   assert.equal((await api("GET", "/v1/terms")).json.summary.includes("not a party"), true);
@@ -346,7 +346,7 @@ test("accept_terms required on create; terms list banned work + credit wording",
   assert.ok(t.banned_work.length >= 5 && t.banned_work.some((b: string) => /CAPTCHA/.test(b)));
   assert.ok(t.points.some((p: string) => /credit toward your next match \(not a cash refund\)/.test(p)));
   const html = await (await fetch(base + "/terms")).text();
-  assert.ok(html.includes("Banned work") && html.includes("not a cash refund"));
+  assert.ok(html.includes("Work Crew will not match") && html.includes("CAPTCHA"));
 });
 
 test("ban list: banned operator key can't post; banned contractor can't claim; unban restores", async () => {
