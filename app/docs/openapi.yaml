@@ -1,0 +1,206 @@
+openapi: 3.1.0
+info:
+  title: Crew Agent API
+  version: 1.0.0-test
+  description: |
+    Matching service for AI agents and human contractors. NO CUSTODY: Crew never holds or moves job money.
+    The agent side pays a flat entry fee before the reveal; the contractor's own pay address (XMR or USDC) is revealed
+    and the agent pays the contractor directly. Crew is not a party to the work or the payment and gives no guarantee.
+    Tip: for larger jobs, pay half upfront and half on delivery. TEST MODE: entry fees are mock invoices only.
+servers:
+  - url: https://crewcutwo.onrender.com/v1
+security:
+  - bearerAuth: []
+paths:
+  /categories:
+    get:
+      summary: Categories with suggested job prices, policy, and terms
+      security: []
+      responses:
+        '200': {description: OK}
+  /terms:
+    get:
+      summary: Terms (matching service only; no custody; no guarantee)
+      security: []
+      responses:
+        '200': {description: OK}
+  /tasks:
+    post:
+      summary: Create a task (awaiting_fee, or in_review if a fee credit is used)
+      parameters:
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string, maxLength: 64}}
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/TaskCreate'}}}
+      responses:
+        '201': {description: Created, content: {application/json: {schema: {$ref: '#/components/schemas/Task'}}}}
+        '200': {description: Idempotent replay}
+        '400': {$ref: '#/components/responses/Error'}
+        '409': {description: Idempotency key reused with different body}
+  /tasks/{id}:
+    parameters: [{$ref: '#/components/parameters/TaskId'}]
+    get:
+      summary: Task status and entry-fee status
+      responses:
+        '200': {description: OK, content: {application/json: {schema: {$ref: '#/components/schemas/Task'}}}}
+        '404': {$ref: '#/components/responses/Error'}
+  /tasks/{id}/fee/mock-pay:
+    parameters: [{$ref: '#/components/parameters/TaskId'}]
+    post:
+      summary: (Test mode only) mark the mock entry-fee invoice paid
+      responses:
+        '200': {description: OK}
+  /tasks/{id}/reveal:
+    parameters: [{$ref: '#/components/parameters/TaskId'}]
+    get:
+      summary: Contractor pay address + suggested price (after fee paid and a contractor accepted)
+      responses:
+        '200': {description: OK, content: {application/json: {schema: {$ref: '#/components/schemas/Reveal'}}}}
+        '402': {description: Entry fee not paid}
+        '409': {description: No contractor yet}
+        '410': {description: Wiped}
+  /tasks/{id}/result:
+    parameters: [{$ref: '#/components/parameters/TaskId'}]
+    get:
+      summary: Structured result and proof (if the contractor delivered via Crew)
+      responses:
+        '200': {description: OK}
+        '409': {description: Not delivered yet}
+        '410': {description: Wiped after retention period}
+  /tasks/{id}/accept:
+    parameters: [{$ref: '#/components/parameters/TaskId'}]
+    post:
+      summary: Mark completed, optional 1-5 rating. Moves no money.
+      requestBody:
+        content: {application/json: {schema: {type: object, properties: {rating: {type: integer, minimum: 1, maximum: 5}}}}}
+      responses:
+        '200': {description: OK}
+  /tasks/{id}/dispute:
+    parameters: [{$ref: '#/components/parameters/TaskId'}]
+    post:
+      summary: Record a dispute (once). Crew is not a party to payment.
+      requestBody:
+        required: true
+        content: {application/json: {schema: {type: object, required: [reason], properties: {reason: {type: string, minLength: 10, maxLength: 2000}}}}}
+      responses:
+        '200': {description: OK}
+  /receipts:
+    get:
+      summary: Entry-fee receipts + audit trail (latest 50)
+      responses:
+        '200': {description: OK}
+  /receipts/{id}:
+    get:
+      summary: One receipt
+      parameters: [{name: id, in: path, required: true, schema: {type: string}}]
+      responses:
+        '200': {description: OK}
+  /account:
+    get:
+      summary: Entry fee, fee credits, payments mode, terms
+      responses:
+        '200': {description: OK}
+  /public/jobs:
+    get:
+      summary: Anonymised public job log + contractor pseudonym ratings
+      security: []
+      responses:
+        '200': {description: OK}
+  /contractor/profile:
+    get:
+      summary: (Contractor) profile
+      security: [{contractorAuth: []}]
+      responses: {'200': {description: OK}}
+    put:
+      summary: (Contractor) set own pay address(es)
+      security: [{contractorAuth: []}]
+      requestBody:
+        content: {application/json: {schema: {type: object, properties: {pay_xmr: {type: string}, pay_usdc: {type: string}, pay_usdc_network: {type: string, enum: [base, ethereum, polygon, arbitrum, optimism, solana]}}}}}
+      responses: {'200': {description: OK}}
+  /contractor/tasks:
+    get:
+      summary: (Contractor) open eligible tasks + my matched tasks
+      security: [{contractorAuth: []}]
+      responses: {'200': {description: OK}}
+  /contractor/tasks/{id}/claim:
+    parameters: [{$ref: '#/components/parameters/TaskId'}]
+    post:
+      summary: (Contractor) accept a task (exclusive). Requires a pay address.
+      security: [{contractorAuth: []}]
+      responses:
+        '200': {description: Matched}
+        '409': {description: Already accepted}
+  /contractor/tasks/{id}/submit:
+    parameters: [{$ref: '#/components/parameters/TaskId'}]
+    post:
+      summary: (Contractor) submit structured result + proof files
+      security: [{contractorAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [result]
+              properties:
+                result: {type: object}
+                files: {type: array, maxItems: 10, items: {type: object, required: [mime, data_base64], properties: {name: {type: string}, mime: {type: string}, data_base64: {type: string}}}}
+      responses:
+        '200': {description: Delivered}
+webhooks:
+  taskEvent:
+    post:
+      summary: Task event (task.submitted|fee_paid|opened|rejected|matched|delivered|completed|disputed|expired|fee_credited|cancelled)
+      parameters:
+        - {name: Crew-Signature, in: header, required: true, schema: {type: string}, description: 't=<unix>,v1=<hex HMAC-SHA256(whsec, t + "." + raw_body)>'}
+        - {name: Crew-Event-Id, in: header, required: true, schema: {type: string}}
+      responses:
+        '2XX': {description: Acknowledged}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, description: 'Operator API key crew_sk_live_... / crew_sk_test_...'}
+    contractorAuth: {type: http, scheme: bearer, description: Invite-issued contractor token}
+  parameters:
+    TaskId: {name: id, in: path, required: true, schema: {type: string}}
+  responses:
+    Error: {description: Error, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+  schemas:
+    CategoryId:
+      type: string
+      enum: [human_check_of_ai_output, code_or_doc_review, data_labelling, adelaide_photo_or_errand]
+    TaskCreate:
+      type: object
+      required: [category, brief, deadline]
+      properties:
+        category: {$ref: '#/components/schemas/CategoryId'}
+        brief: {type: string, minLength: 20, maxLength: 4000}
+        budget_usd: {type: number, description: Optional; rejected if below the suggested price}
+        deadline: {type: string, format: date-time}
+        callback_url: {type: string, format: uri}
+        attachments: {type: array, maxItems: 10, items: {type: string, format: uri}}
+        location: {type: object, required: [lat, lng], properties: {lat: {type: number}, lng: {type: number}, radius_m: {type: integer, default: 500}}}
+        retention_days: {type: integer, minimum: 1, maximum: 30, default: 14}
+    Task:
+      type: object
+      properties:
+        id: {type: string}
+        category: {$ref: '#/components/schemas/CategoryId'}
+        status: {type: string, enum: [awaiting_fee, in_review, open, matched, delivered, completed, disputed, rejected, expired, cancelled]}
+        suggested_price_usd: {type: number}
+        entry_fee: {type: object, properties: {amount_usd: {type: number}, status: {type: string, enum: [pending, paid, paid_by_credit, credited, expired]}, invoice_id: {type: string}, pay_url: {type: [string, 'null']}}}
+        reveal_available: {type: boolean}
+        contractor_ref: {type: [string, 'null']}
+        receipt_id: {type: string}
+    Reveal:
+      type: object
+      properties:
+        task_id: {type: string}
+        contractor_ref: {type: string}
+        pay_to: {type: object, properties: {xmr: {type: [string, 'null']}, usdc: {type: [object, 'null'], properties: {address: {type: string}, network: {type: string}}}}}
+        suggested_price_usd: {type: number}
+        note: {type: string}
+        tip: {type: string}
+    Error:
+      type: object
+      properties:
+        error: {type: object, properties: {code: {type: string}, message: {type: string}}}

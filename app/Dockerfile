@@ -11,6 +11,7 @@ RUN npm ci
 COPY tsconfig.json ./
 COPY src ./src
 COPY public ./public
+COPY docs ./docs
 RUN npm run build \
   && npm prune --omit=dev
 
@@ -27,6 +28,7 @@ COPY --from=build --chown=crew:crew /app/node_modules ./node_modules
 COPY --from=build --chown=crew:crew /app/dist ./dist
 COPY --from=build --chown=crew:crew /app/package.json ./
 COPY --from=build --chown=crew:crew /app/public ./public
+COPY --from=build --chown=crew:crew /app/docs ./docs
 
 ENV NODE_ENV=production \
     PORT=3847 \

@@ -8,6 +8,7 @@ import { createMatch, getMatchStatus, markInvoicePaid, cancelMatch, normaliseHan
 import { db, applyExpiryIfNeeded, matchExpiresAt, type MatchStatus } from "./db.js";
 import { isLiveMode, mockPayAllowed, fetchPublicInvoiceStatus, isConfirmedStatus } from "./xmrcheckout.js";
 import { randomUUID } from "node:crypto";
+import { mountV1 } from "./v1/router.js";
 import { handleContactRequest, redactContactBody } from "./contact.js";
 import {
   completeCallbackPayment,
@@ -20,6 +21,9 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = Number(process.env.PORT || 3847);
+
+// Agent API v1 (+ /jobs, /terms, /hard-limits, /llms.txt, /mcp). Mounted first so its own body limit applies.
+mountV1(app);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

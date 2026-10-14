@@ -32,6 +32,8 @@ function baseUrl(): string {
 }
 
 function apiKey(): string | undefined {
+  // TEST MODE guard: real XMR invoices only when CREW_PAYMENTS_MODE=live (default: test → mock invoices only).
+  if (process.env.CREW_PAYMENTS_MODE !== "live") return undefined;
   const k = process.env.XMRCHECKOUT_API_KEY?.trim();
   return k || undefined;
 }
@@ -192,4 +194,22 @@ export async function createCallbackInvoice(opts: {
     payUrl,
     amountUsd: AMOUNT_USD,
   };
+}
+
+/**
+ * Agent API v1: flat entry-fee invoice (agent side, paid before reveal). Additive only.
+ * Returns a mock invoice unless CREW_PAYMENTS_MODE=live and an API key is configured.
+ */
+export async function createEntryFeeInvoice(opts: { taskId: string; amountUsdCents: number }): Promise<{ id: string; payUrl: string; mock: boolean }> {
+  const key = apiKey();
+  if (!key) return { id: `mock_fee_${opts.taskId}`, payUrl: `${publicBase()}/v1/tasks/${opts.taskId}/fee/mock-pay`, mock: true };
+  const res = await fetch(`${baseUrl()}/invoices`, {
+    method: "POST",
+    headers: { Authorization: `ApiKey ${key}`, "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ amount_fiat: (opts.amountUsdCents / 100).toFixed(2), currency: "USD", confirmation_target: 2, metadata: { kind: "crew_v1_entry_fee", task_id: opts.taskId, brand: "Crew" } }),
+  });
+  if (!res.ok) throw new Error(`XMR Checkout create invoice failed: ${res.status} ${(await res.text().catch(() => "")).slice(0, 200)}`);
+  const data = (await res.json()) as { id: string; invoice_url?: string };
+  if (!data.id) throw new Error("XMR Checkout response missing id");
+  return { id: data.id, payUrl: data.invoice_url || `https://xmrcheckout.com/invoice/${data.id}`, mock: false };
 }
