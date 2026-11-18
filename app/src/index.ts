@@ -9,6 +9,7 @@ import { db, applyExpiryIfNeeded, matchExpiresAt, type MatchStatus } from "./db.
 import { isLiveMode, mockPayAllowed, fetchPublicInvoiceStatus, isConfirmedStatus } from "./xmrcheckout.js";
 import { randomUUID } from "node:crypto";
 import { mountV1 } from "./v1/router.js";
+import { mountVisits, matchBeaconScript } from "./visits.js";
 import { handleContactRequest, redactContactBody } from "./contact.js";
 import {
   completeCallbackPayment,
@@ -24,6 +25,8 @@ const PORT = Number(process.env.PORT || 3847);
 
 // Agent API v1 (+ /jobs, /terms, /hard-limits, /llms.txt, /mcp). Mounted first so its own body limit applies.
 mountV1(app);
+// Privacy-friendly visitor counter: /hit beacon + key-protected /stats.
+mountVisits(app);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -123,6 +126,7 @@ const pageShell = (title: string, body: string, extraHead = "") => `<!DOCTYPE ht
       <p class="footer-meta"><a href="${MARKETING_URL}">How Crew works</a> · <a href="/#get-a-reply">Get a reply</a> · Anonymous by design</p>
     </div>
   </footer>
+  ${matchBeaconScript}
 </body>
 </html>`;
 

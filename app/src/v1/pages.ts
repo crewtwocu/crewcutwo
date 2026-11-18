@@ -1,4 +1,5 @@
 import { policy } from "./config.js";
+import { matchBeaconScript } from "../visits.js";
 
 function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -8,7 +9,7 @@ function shell(title: string, body: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)} · Crew</title><link rel="stylesheet" href="/public/style.css">
 <style>table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:.4rem .6rem;border-bottom:1px solid #ddd}main{max-width:860px;margin:2rem auto;padding:0 1rem}</style>
-</head><body><main>${body}<p><small><a href="/jobs">Job log</a> · <a href="/terms">Terms</a> · <a href="/hard-limits">Hard limits</a> · <a href="/llms.txt">llms.txt</a></small></p></main></body></html>`;
+</head><body><main>${body}<p><small><a href="/jobs">Job log</a> · <a href="/terms">Terms</a> · <a href="/hard-limits">Hard limits</a> · <a href="/llms.txt">llms.txt</a></small></p></main>${matchBeaconScript}</body></html>`;
 }
 
 export function hardLimitsPage(): string {
