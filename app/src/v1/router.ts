@@ -281,7 +281,7 @@ export function mountV1(app: express.Express, opts: { timers?: boolean } = {}): 
   app.get("/llms.txt", (_req, res) => {
     const p = path.join(__dirname, "..", "..", "docs", "llms.txt");
     if (!fs.existsSync(p)) return res.status(404).end();
-    res.type("text/plain").send(fs.readFileSync(p, "utf8"));
+    res.type("text/plain").send(llmsTxtForMode(fs.readFileSync(p, "utf8"), isLiveMode()));
   });
   if (opts.timers !== false) {
     const t = setInterval(() => {
@@ -290,4 +290,13 @@ export function mountV1(app: express.Express, opts: { timers?: boolean } = {}): 
     }, policy.sweepIntervalMs());
     t.unref();
   }
+}
+
+/** llms.txt status line follows the payments switch (same as the page copy). */
+export function llmsTxtForMode(text: string, live: boolean): string {
+  if (!live) return text;
+  return text.replace(
+    /^Status: TEST MODE\..*$/m,
+    "Status: LIVE. Payments are real: fees are paid in crypto (XMR) via XMR Checkout invoices. GET /v1/categories is authoritative for prices and policy."
+  );
 }

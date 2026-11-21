@@ -247,6 +247,7 @@ function pollScript(matchId: string, side?: "contractor" | "operator"): string {
   const sideQ = side ? `?side=${side}` : "";
   return `<script>
 (function () {
+function crewStartPoll() {
   var matchId = ${JSON.stringify(matchId)};
   var api = "/api/matches/" + encodeURIComponent(matchId) + ${JSON.stringify(sideQ)};
   var statusEl = document.getElementById("live-status");
@@ -256,6 +257,8 @@ function pollScript(matchId: string, side?: "contractor" | "operator"): string {
   var payActions = document.querySelectorAll("[data-pay-encourage]");
   var stopped = false;
   var seenConnection = false;
+  var lastExpiresAt = null;
+  var lastStatus = null;
 
   function setStatus(text) {
     if (statusEl) statusEl.textContent = text;
@@ -337,7 +340,7 @@ function pollScript(matchId: string, side?: "contractor" | "operator"): string {
     var mins = Math.floor(left / 60000);
     var secs = Math.floor((left % 60000) / 1000);
     expiryEl.textContent =
-      "Expires in " + mins + "m " + secs + "s (" + new Date(expiresAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short", timeZoneName: "short" }) + ")";
+      "Expires in " + mins + "m " + secs + "s (" + new Date(expiresAt).toLocaleString(undefined, { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }) + ")";
   }
 
   function updateInvoices(invoices, status) {
@@ -378,6 +381,8 @@ function pollScript(matchId: string, side?: "contractor" | "operator"): string {
         }
         var j = res.j;
         setStatus(j.status || "?");
+        lastExpiresAt = j.expiresAt;
+        lastStatus = j.status;
         updateExpiry(j.expiresAt, j.status);
         updateInvoices(j.invoices, j.status);
         if (j.connection && j.connection.code) {
@@ -414,9 +419,30 @@ function pollScript(matchId: string, side?: "contractor" | "operator"): string {
     }
     tick();
   }, 3000);
+  // Smooth countdown between polls (display only).
+  var countdown = setInterval(function () {
+    if (stopped) {
+      clearInterval(countdown);
+      return;
+    }
+    if (lastExpiresAt) updateExpiry(lastExpiresAt, lastStatus);
+  }, 1000);
+}
+// Script is injected in <head>: wait for the DOM so live elements exist.
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", crewStartPoll);
+} else {
+  crewStartPoll();
+}
 })();
 </script>`;
 }
+
+/** Same SVG mark as the inline favicon, so browsers' default /favicon.ico request doesn't 404. */
+app.get("/favicon.ico", (_req, res) => {
+  const svg = decodeURIComponent(CREW_FAVICON.replace(/^data:image\/svg\+xml,/, ""));
+  res.set("Cache-Control", "public, max-age=86400").type("image/svg+xml").send(svg);
+});
 
 app.get("/health", (_req, res) => {
   res.json({

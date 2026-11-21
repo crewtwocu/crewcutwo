@@ -9,7 +9,7 @@ function esc(s: string): string {
 function shell(title: string, body: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)} · Crew</title><link rel="stylesheet" href="/public/style.css">
-<style>table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:.4rem .6rem;border-bottom:1px solid #ddd}main{max-width:860px;margin:2rem auto;padding:0 1rem}</style>
+<style>table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:.4rem .6rem;border-bottom:1px solid #ddd}main{max-width:860px;width:100%;min-width:0;box-sizing:border-box;margin:2rem auto;padding:0 1rem}.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}@media (max-width:480px){th,td{padding:.35rem .4rem;font-size:.9rem}}</style>
 </head><body><main>${body}<p><small><a href="/jobs">Job log</a> · <a href="/terms">Terms</a> · <a href="/hard-limits">Hard limits</a> · <a href="/llms.txt">llms.txt</a></small></p></main>${matchBeaconScript}</body></html>`;
 }
 
@@ -44,7 +44,7 @@ export function jobsPage(
     "Job log",
     `<h1>Public job log</h1>
 <p>Anonymised: category, suggested price, status and turnaround only. No briefs, results, or identities are published.</p>
-<table><tr><th>Posted</th><th>Category</th><th>Suggested price</th><th>Status</th><th>Turnaround</th><th></th></tr>${rows}</table>`
+<div class="table-scroll"><table><tr><th>Posted</th><th>Category</th><th>Suggested price</th><th>Status</th><th>Turnaround</th><th></th></tr>${rows}</table></div>`
   );
 }
 
