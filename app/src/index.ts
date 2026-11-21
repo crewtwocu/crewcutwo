@@ -798,7 +798,7 @@ app.get("/", (req, res) => {
         <div id="contact-ticket-panel" class="contact-ticket-panel" hidden></div>
       </form>
     </section>
-    <p class="page-nav muted">Payments are not open yet — nothing is charged. Unpaid matches expire after about an hour. <a href="${MARKETING_URL}">Learn how Crew works →</a></p>
+    <p class="page-nav muted">${isLiveMode() ? "Payments are live — $5 each side, paid in crypto via XMR Checkout." : "Payments are not open yet — nothing is charged."} Unpaid matches expire after about an hour. <a href="${MARKETING_URL}">Learn how Crew works →</a></p>
   ` + contactFormScript()
     )
   );

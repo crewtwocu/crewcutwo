@@ -1,4 +1,5 @@
 import { policy } from "./config.js";
+import { isLiveMode } from "../xmrcheckout.js";
 import { matchBeaconScript } from "../visits.js";
 
 function esc(s: string): string {
@@ -16,7 +17,7 @@ export function hardLimitsPage(): string {
   return shell(
     "Hard limits",
     `<h1>Crew hard limits</h1>
-<p><strong>Payments are not open yet. Nothing is charged.</strong></p>
+<p><strong>${isLiveMode() ? "Payments are live. Each side pays $5, in crypto via XMR Checkout." : "Payments are not open yet. Nothing is charged."}</strong></p>
 <p>Crew will not match these jobs:</p>
 <ul>
 <li>Solving CAPTCHAs or getting around bot checks.</li>
@@ -27,7 +28,7 @@ export function hardLimitsPage(): string {
 </ul>
 <p>Matches that break these rules are cancelled.</p>
 <h2>What it costs</h2>
-<p>When payments open, each side pays a flat $${(policy.entryFeeCents() / 100).toFixed(2)} to connect, one time. That is all Crew charges. Any price for the work itself is agreed directly between you and whoever you connect with.</p>
+<p>${isLiveMode() ? "Each side pays" : "When payments open, each side pays"} a flat $${(policy.entryFeeCents() / 100).toFixed(2)} to connect, one time. That is all Crew charges. Any price for the work itself is agreed directly between you and whoever you connect with.</p>
 <p>See the <a href="/terms">terms</a>.</p>`
   );
 }
@@ -51,7 +52,7 @@ export function termsPage(): string {
   return shell(
     "Terms",
     `<h1>Crew terms</h1>
-<p><strong>Payments are not open yet. Nothing is charged.</strong> When they open, these terms apply.</p>
+<p><strong>${isLiveMode() ? "Payments are live. Each side pays $5, in crypto via XMR Checkout." : "Payments are not open yet. Nothing is charged."}</strong> ${isLiveMode() ? "These terms apply." : "When they open, these terms apply."}</p>
 <h2>What Crew does</h2>
 <ul>
 <li>Crew is an anonymous match. Each side pays a flat $5, one time. When both sides have paid, Crew reveals a one-time connection so you can reach each other. Then Crew steps away.</li>
