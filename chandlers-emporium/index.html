@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chandler’s Emporium — Antiques &amp; Curiosities</title>
+  <meta name="description" content="Chandler’s Emporium: a curated gallery of antique furniture, china and porcelain, and collectibles. Pieces with a past." />
+  <meta property="og:title" content="Chandler’s Emporium — Antiques &amp; Curiosities" />
+  <meta property="og:description" content="A curated gallery of antique furniture, china and porcelain, and collectibles." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="img/chest-of-drawers.jpg" />
+  <meta name="theme-color" content="#1a110c" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a110c'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='20' font-style='italic' text-anchor='middle' fill='%23c9a35b'%3EC%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <p class="sample-bar" role="note">
+    <span class="sample-dot" aria-hidden="true"></span>
+    Sample pieces, for display only. Photos are public-domain museum images; nothing shown is for sale.
+    <a href="CREDITS.md">Image credits</a>
+  </p>
+
+  <header class="site-header" id="top">
+    <nav class="nav container" aria-label="Primary">
+      <a class="wordmark" href="#top" aria-label="Chandler’s Emporium home">
+        <span class="wordmark-mark" aria-hidden="true">C</span>
+        <span class="wordmark-text">Chandler’s <em>Emporium</em></span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-menu" aria-label="Open menu">
+        <span></span><span></span>
+      </button>
+      <ul class="nav-links" id="nav-menu">
+        <li><a href="#rooms">The rooms</a></li>
+        <li><a href="#spotlight">Spotlight</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#visit" class="nav-cta">Visit &amp; enquire</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="kicker">Antiques &amp; Curiosities</p>
+          <h1 id="hero-title" class="hero-title">Chandler’s<br /><em>Emporium</em></h1>
+          <p class="hero-lede">Pieces with a past. A curated gallery of furniture, fine china and small treasures, chosen one at a time.</p>
+          <div class="hero-ctas">
+            <a class="btn btn-brass" href="#rooms">Walk the rooms</a>
+            <a class="btn btn-line" href="#spotlight">The spotlight piece</a>
+          </div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <figure class="frame frame--tall">
+            <img src="img/sevres-vase-800.jpg" alt="" width="600" height="800" />
+          </figure>
+          <figure class="frame frame--wide">
+            <img src="img/chest-of-drawers-800.jpg" alt="" width="800" height="714" />
+          </figure>
+          <figure class="frame frame--round">
+            <img src="img/meissen-plate-800.jpg" alt="" width="800" height="800" />
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- INTRO -->
+    <section class="intro" id="about" aria-labelledby="about-title">
+      <div class="container intro-inner">
+        <p class="ornament" aria-hidden="true">❦</p>
+        <h2 id="about-title" class="section-title">Every piece has a story</h2>
+        <p class="intro-text">
+          Chandler’s Emporium is an antiques shop for people who like to linger. We gather
+          furniture, china and porcelain, and the small curiosities in between, and show them
+          the way a gallery would: one room at a time, each with its own plaque.
+        </p>
+        <p class="intro-text muted">Take your time. If something catches your eye, ask us about it.</p>
+      </div>
+    </section>
+
+    <!-- SPOTLIGHT -->
+    <section class="spotlight" id="spotlight" aria-labelledby="spotlight-title">
+      <div class="container spotlight-grid" id="spotlight-slot">
+        <!-- filled by script.js from the item marked featured: true -->
+      </div>
+    </section>
+
+    <!-- ROOMS -->
+    <section class="rooms" id="rooms" aria-labelledby="rooms-title">
+      <div class="container">
+        <header class="rooms-head">
+          <p class="kicker">The collection</p>
+          <h2 id="rooms-title" class="section-title">The rooms</h2>
+          <p class="muted">Wander by room, or choose one below.</p>
+          <div class="room-filter" role="group" aria-label="Show room" id="room-filter"></div>
+        </header>
+        <div id="rooms-slot"></div>
+        <noscript><p class="muted">Turn on JavaScript to see the pieces.</p></noscript>
+      </div>
+    </section>
+
+    <!-- VISIT -->
+    <section class="visit" id="visit" aria-labelledby="visit-title">
+      <div class="container visit-grid">
+        <div>
+          <p class="kicker">Visit &amp; enquire</p>
+          <h2 id="visit-title" class="section-title">Come and see in person</h2>
+          <p class="muted">Ask about any piece, its condition, or a price on request. Details below are placeholders until the shop’s information is confirmed.</p>
+        </div>
+        <dl class="plaque plaque--visit">
+          <div><dt>Address</dt><dd class="placeholder">[Shop address to be added]</dd></div>
+          <div><dt>Opening hours</dt><dd class="placeholder">[Opening hours to be added]</dd></div>
+          <div><dt>Phone</dt><dd class="placeholder">[Phone number to be added]</dd></div>
+          <div><dt>Email</dt><dd class="placeholder">[Email address to be added]</dd></div>
+        </dl>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <p class="footer-mark">Chandler’s <em>Emporium</em></p>
+        <p class="muted small">Antiques &amp; curiosities.</p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="#rooms">The rooms</a></li>
+        <li><a href="#spotlight">Spotlight</a></li>
+        <li><a href="#visit">Visit</a></li>
+        <li><a href="CREDITS.md">Image credits</a></li>
+      </ul>
+      <p class="footer-note small">
+        All pieces shown are samples for display only and are not for sale. Photographs: The Metropolitan
+        Museum of Art, Open Access (CC0), via Wikimedia Commons.
+      </p>
+      <p class="footer-note small">© <span id="year">2026</span> Chandler’s Emporium.</p>
+    </div>
+  </footer>
+
+  <!-- DETAIL VIEW -->
+  <dialog class="viewer" id="viewer" aria-labelledby="viewer-title">
+    <div class="viewer-inner">
+      <button class="viewer-close" type="button" aria-label="Close" data-close>×</button>
+      <figure class="viewer-figure">
+        <img id="viewer-img" src="" alt="" />
+      </figure>
+      <div class="viewer-plaque">
+        <p class="viewer-room kicker" id="viewer-room"></p>
+        <h2 id="viewer-title" class="viewer-title"></h2>
+        <p class="viewer-meta" id="viewer-meta"></p>
+        <p class="viewer-story" id="viewer-story"></p>
+        <dl class="viewer-facts" id="viewer-facts"></dl>
+        <p class="viewer-price" id="viewer-price"></p>
+        <a class="btn btn-brass" href="#visit" data-close>Enquire about this piece</a>
+        <div class="viewer-nav">
+          <button type="button" class="btn btn-line btn-sm" id="viewer-prev" aria-label="Previous piece">← Previous</button>
+          <button type="button" class="btn btn-line btn-sm" id="viewer-next" aria-label="Next piece">Next →</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="items.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
