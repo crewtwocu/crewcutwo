@@ -8,8 +8,8 @@ chandlers-emporium/
   styles.css   walnut / oxblood / brass styling
   script.js    renders rooms, spotlight and the detail view from items.js
   items.js     <- ALL PIECES LIVE HERE (one file to edit)
-  img/         photos: <name>.jpg (~1600 px) and <name>-800.jpg (~800 px)
-  CREDITS.md   source and licence for every image
+  img/         photos: <name>.jpg (~1600 px) and <name>-600.jpg (~600 px)
+  CREDITS.md   brief note on the photographs
 ```
 
 ## Preview locally
@@ -21,7 +21,7 @@ cd chandlers-emporium && python3 -m http.server 8080
 ```
 
 Then open http://localhost:8080/. A piece can be linked directly, e.g.
-http://localhost:8080/#piece-block-shell-chest.
+http://localhost:8080/#piece-gum-tree-landscape.
 
 ## Editing pieces
 
@@ -30,21 +30,26 @@ story, price, image, alt text, room). Rooms are listed in `CE_ROOMS`. Set
 `featured: true` on the piece for the spotlight. Leave `price: ""` to show
 "Price on request".
 
-## Still placeholders (to do before going live)
+To add another view of the same piece (for example a lid open), set a
+`gallery` array of `{ img, alt }` objects. The first view is the card image
+if `img` is also set.
 
-- **All 11 pieces are SAMPLES.** The photos are CC0 images of objects at The
-  Metropolitan Museum of Art (see `CREDITS.md`). They aren't shop stock and
-  aren't for sale. Replace them with real pieces and photos, then remove the
-  "Sample pieces, for display only" bar at the top of `index.html` and the
-  sample wording in the footer.
-- **Prices:** every piece shows "Price on request". A price entered on a piece
-  still marked `sample: true` is labelled "(sample price)".
+Prepare photos before adding them: long edge about 1600 px, a 600 px thumb
+named `<stem>-600.jpg`, JPEG quality around 80, auto-oriented, with EXIF and
+GPS metadata stripped.
+
+## Still placeholders
+
 - **Visit details:** address, opening hours, phone and email are bracketed
   placeholders in the `#visit` section of `index.html`.
 - **Shop story:** the intro is deliberately general. No history, owners or
   reviews have been written in.
 
-## Not deployed
+This folder is published as the Chandler’s Emporium demo. It does not affect
+the live Crew marketplace sites.
 
-This folder isn't connected to any Render service and doesn't affect the live
-Crew sites.
+## Pending photograph
+
+A photograph of the embossed silver-plate coal scuttle (rose pattern, with a
+scoop) could not be retrieved for this update. That piece is pending and is
+not shown on the site yet.

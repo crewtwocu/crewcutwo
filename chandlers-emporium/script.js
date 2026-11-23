@@ -12,15 +12,20 @@
   }
   function price(it) {
     var p = String(it.price || "").trim();
-    if (!p) return "Price on request";
-    return it.sample ? p + " (sample price)" : p;
+    return p || "Price on request";
   }
   function roomName(id) {
     for (var i = 0; i < ROOMS.length; i++) if (ROOMS[i].id === id) return ROOMS[i].name;
     return "";
   }
-  function src(it, small) { return "img/" + it.img + (small ? "-800" : "") + ".jpg"; }
-  var sampleTag = '<span class="sample-tag" title="Sample piece, for display only">Sample</span>';
+  function views(it) {
+    if (it.gallery && it.gallery.length) return it.gallery;
+    return [{ img: it.img, alt: it.alt || "" }];
+  }
+  function src(stem, small) { return "img/" + stem + (small ? "-600" : "") + ".jpg"; }
+  function metaLine(it) {
+    return [it.era, it.origin].filter(function (s) { return String(s || "").trim(); }).join(" · ");
+  }
 
   var yr = $("#year"); if (yr) yr.textContent = new Date().getFullYear();
 
@@ -44,12 +49,12 @@
   if (feat && slot) {
     slot.innerHTML =
       '<figure class="spot-figure">' +
-        '<div class="frame frame--gilt"><img src="' + src(feat) + '" alt="' + esc(feat.alt) + '" loading="lazy" /></div>' +
+        '<div class="frame frame--gilt"><img src="' + src(feat.img) + '" alt="' + esc(feat.alt) + '" loading="lazy" /></div>' +
       '</figure>' +
       '<div class="spot-copy">' +
         '<p class="kicker">Spotlight</p>' +
         '<h2 id="spotlight-title" class="section-title">' + esc(feat.name) + '</h2>' +
-        '<p class="plaque-meta">' + esc(feat.era) + ' · ' + esc(feat.origin) + (feat.sample ? ' · ' + sampleTag : '') + '</p>' +
+        '<p class="plaque-meta">' + esc(metaLine(feat)) + '</p>' +
         '<p class="spot-story">' + esc(feat.story) + '</p>' +
         '<p class="plaque-price">' + esc(price(feat)) + '</p>' +
         '<button type="button" class="btn btn-brass" data-open="' + esc(feat.id) + '">View the piece</button>' +
@@ -59,22 +64,22 @@
   /* Rooms */
   var roomsSlot = $("#rooms-slot");
   var html = "";
+  var numerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
   ROOMS.forEach(function (room, ri) {
     var pieces = ITEMS.filter(function (i) { return i.room === room.id; });
     if (!pieces.length) return;
     html += '<section class="room" id="room-' + room.id + '" data-room="' + room.id + '" aria-labelledby="room-' + room.id + '-title">' +
-      '<header class="room-head"><span class="room-no" aria-hidden="true">Room ' + ["I", "II", "III", "IV", "V", "VI"][ri] + '</span>' +
+      '<header class="room-head"><span class="room-no" aria-hidden="true">Room ' + (numerals[ri] || (ri + 1)) + '</span>' +
       '<h3 id="room-' + room.id + '-title" class="room-title">' + esc(room.name) + '</h3>' +
       '<p class="room-note muted">' + esc(room.note) + '</p></header><ul class="grid">';
     pieces.forEach(function (it) {
       html += '<li class="card">' +
         '<button type="button" class="card-btn" data-open="' + esc(it.id) + '" aria-label="View ' + esc(it.name) + '">' +
-          '<span class="card-img"><img src="' + src(it, true) + '" alt="' + esc(it.alt) + '" loading="lazy" decoding="async" /></span>' +
+          '<span class="card-img"><img src="' + src(it.img, true) + '" alt="' + esc(it.alt) + '" loading="lazy" decoding="async" /></span>' +
         '</button>' +
         '<div class="plaque">' +
-          (it.sample ? sampleTag : '') +
           '<h4 class="plaque-title"><button type="button" class="link-btn" data-open="' + esc(it.id) + '">' + esc(it.name) + '</button></h4>' +
-          '<p class="plaque-meta">' + esc(it.era) + ' · ' + esc(it.origin) + '</p>' +
+          '<p class="plaque-meta">' + esc(metaLine(it)) + '</p>' +
           '<p class="plaque-blurb">' + esc(it.blurb) + '</p>' +
           '<p class="plaque-price">' + esc(price(it)) + '</p>' +
         '</div></li>';
@@ -86,7 +91,9 @@
   /* Room filter */
   var filter = $("#room-filter");
   if (filter) {
-    var opts = [{ id: "all", name: "All rooms" }].concat(ROOMS);
+    var opts = [{ id: "all", name: "All rooms" }].concat(ROOMS.filter(function (r) {
+      return ITEMS.some(function (i) { return i.room === r.id; });
+    }));
     filter.innerHTML = opts.map(function (r, i) {
       return '<button type="button" class="chip" data-room="' + r.id + '" aria-pressed="' + (i === 0) + '">' + esc(r.name) + '</button>';
     }).join("");
@@ -99,21 +106,40 @@
   }
 
   /* Detail view */
-  var dlg = $("#viewer"), current = -1, lastFocus = null;
+  var dlg = $("#viewer"), current = -1, viewIdx = 0, lastFocus = null;
+
+  function setView(it, vi) {
+    var list = views(it);
+    viewIdx = Math.max(0, Math.min(vi, list.length - 1));
+    var v = list[viewIdx];
+    var img = $("#viewer-img");
+    img.src = src(v.img);
+    img.alt = v.alt || it.alt || "";
+    var thumbs = $("#viewer-thumbs");
+    if (!thumbs) return;
+    if (list.length < 2) { thumbs.hidden = true; thumbs.innerHTML = ""; return; }
+    thumbs.hidden = false;
+    thumbs.innerHTML = list.map(function (g, i) {
+      return '<button type="button" class="viewer-thumb" data-view="' + i + '" aria-label="Photo ' + (i + 1) + ' of ' + list.length + '"' +
+        (i === viewIdx ? ' aria-current="true"' : '') + '>' +
+        '<img src="' + src(g.img, true) + '" alt="" />' +
+        '</button>';
+    }).join("");
+  }
+
   function show(idx) {
     var it = ITEMS[idx]; if (!it) return;
     current = idx;
-    var img = $("#viewer-img");
-    img.src = src(it); img.alt = it.alt || "";
-    $("#viewer-room").innerHTML = esc(roomName(it.room)) + (it.sample ? " " + sampleTag : "");
+    setView(it, 0);
+    $("#viewer-room").textContent = roomName(it.room);
     $("#viewer-title").textContent = it.name;
-    $("#viewer-meta").textContent = it.era + " · " + it.origin;
+    $("#viewer-meta").textContent = metaLine(it);
     $("#viewer-story").textContent = it.story || it.blurb;
-    $("#viewer-facts").innerHTML =
-      '<div><dt>Period</dt><dd>' + esc(it.era) + '</dd></div>' +
-      '<div><dt>Origin</dt><dd>' + esc(it.origin) + '</dd></div>' +
-      (it.material ? '<div><dt>Material</dt><dd>' + esc(it.material) + '</dd></div>' : '') +
-      (it.sample ? '<div><dt>Note</dt><dd>Sample piece for display only. Photo: The Met, CC0.</dd></div>' : '');
+    var facts = "";
+    if (it.era) facts += '<div><dt>Period</dt><dd>' + esc(it.era) + '</dd></div>';
+    if (it.origin) facts += '<div><dt>Origin</dt><dd>' + esc(it.origin) + '</dd></div>';
+    if (it.material) facts += '<div><dt>Material</dt><dd>' + esc(it.material) + '</dd></div>';
+    $("#viewer-facts").innerHTML = facts;
     $("#viewer-price").textContent = price(it);
     if (history.replaceState) history.replaceState(null, "", "#piece-" + it.id);
   }
@@ -137,6 +163,11 @@
       if (lastFocus && lastFocus.focus) lastFocus.focus();
     });
     dlg.addEventListener("click", function (e) {
+      var thumb = e.target.closest("[data-view]");
+      if (thumb && ITEMS[current]) {
+        setView(ITEMS[current], Number(thumb.getAttribute("data-view")));
+        return;
+      }
       if (e.target === dlg || e.target.closest("[data-close]")) {
         var toVisit = e.target.closest('a[href="#visit"]');
         close();

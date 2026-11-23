@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Chandler’s Emporium — Antiques &amp; Curiosities</title>
-  <meta name="description" content="Chandler’s Emporium: a curated gallery of antique furniture, china and porcelain, and collectibles. Pieces with a past." />
+  <meta name="description" content="Chandler’s Emporium: a curated gallery of antique furniture, pictures, silver and curiosities. Pieces with a past." />
   <meta property="og:title" content="Chandler’s Emporium — Antiques &amp; Curiosities" />
-  <meta property="og:description" content="A curated gallery of antique furniture, china and porcelain, and collectibles." />
+  <meta property="og:description" content="A curated gallery of pictures, silver, glass and small treasures." />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="img/chest-of-drawers.jpg" />
+  <meta property="og:image" content="img/gum-tree-landscape.jpg" />
   <meta name="theme-color" content="#1a110c" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -20,10 +20,10 @@
   <div class="grain" aria-hidden="true"></div>
   <a class="skip-link" href="#main">Skip to content</a>
 
-  <p class="sample-bar" role="note">
+  <p class="notice-bar sample-bar" role="note">
     <span class="sample-dot" aria-hidden="true"></span>
-    Sample pieces, for display only. Photos are public-domain museum images; nothing shown is for sale.
-    <a href="CREDITS.md">Image credits</a>
+    Enquire about any piece.
+    <a href="#visit">Visit &amp; enquire</a>
   </p>
 
   <header class="site-header" id="top">
@@ -51,7 +51,7 @@
         <div class="hero-copy">
           <p class="kicker">Antiques &amp; Curiosities</p>
           <h1 id="hero-title" class="hero-title">Chandler’s<br /><em>Emporium</em></h1>
-          <p class="hero-lede">Pieces with a past. A curated gallery of furniture, fine china and small treasures, chosen one at a time.</p>
+          <p class="hero-lede">Pieces with a past. A curated gallery of pictures, silver, glass and small treasures, chosen one at a time.</p>
           <div class="hero-ctas">
             <a class="btn btn-brass" href="#rooms">Walk the rooms</a>
             <a class="btn btn-line" href="#spotlight">The spotlight piece</a>
@@ -59,13 +59,13 @@
         </div>
         <div class="hero-art" aria-hidden="true">
           <figure class="frame frame--tall">
-            <img src="img/sevres-vase-800.jpg" alt="" width="600" height="800" />
+            <img src="img/gum-tree-landscape-600.jpg" alt="" />
           </figure>
           <figure class="frame frame--wide">
-            <img src="img/chest-of-drawers-800.jpg" alt="" width="800" height="714" />
+            <img src="img/silver-plate-tea-service-600.jpg" alt="" />
           </figure>
           <figure class="frame frame--round">
-            <img src="img/meissen-plate-800.jpg" alt="" width="800" height="800" />
+            <img src="img/camp-oven-600.jpg" alt="" />
           </figure>
         </div>
       </div>
@@ -78,7 +78,7 @@
         <h2 id="about-title" class="section-title">Every piece has a story</h2>
         <p class="intro-text">
           Chandler’s Emporium is an antiques shop for people who like to linger. We gather
-          furniture, china and porcelain, and the small curiosities in between, and show them
+          pictures, silver, glass and the small curiosities in between, and show them
           the way a gallery would: one room at a time, each with its own plaque.
         </p>
         <p class="intro-text muted">Take your time. If something catches your eye, ask us about it.</p>
@@ -112,7 +112,7 @@
         <div>
           <p class="kicker">Visit &amp; enquire</p>
           <h2 id="visit-title" class="section-title">Come and see in person</h2>
-          <p class="muted">Ask about any piece, its condition, or a price on request. Details below are placeholders until the shop’s information is confirmed.</p>
+          <p class="muted">Enquire about any piece, its condition, or a price on request. Details below are placeholders until the shop’s information is confirmed.</p>
         </div>
         <dl class="plaque plaque--visit">
           <div><dt>Address</dt><dd class="placeholder">[Shop address to be added]</dd></div>
@@ -134,12 +134,8 @@
         <li><a href="#rooms">The rooms</a></li>
         <li><a href="#spotlight">Spotlight</a></li>
         <li><a href="#visit">Visit</a></li>
-        <li><a href="CREDITS.md">Image credits</a></li>
       </ul>
-      <p class="footer-note small">
-        All pieces shown are samples for display only and are not for sale. Photographs: The Metropolitan
-        Museum of Art, Open Access (CC0), via Wikimedia Commons.
-      </p>
+      <p class="footer-note small">Enquire about any piece — condition and price on request.</p>
       <p class="footer-note small">© <span id="year">2026</span> Chandler’s Emporium.</p>
     </div>
   </footer>
@@ -150,6 +146,7 @@
       <button class="viewer-close" type="button" aria-label="Close" data-close>×</button>
       <figure class="viewer-figure">
         <img id="viewer-img" src="" alt="" />
+        <div class="viewer-thumbs" id="viewer-thumbs" hidden></div>
       </figure>
       <div class="viewer-plaque">
         <p class="viewer-room kicker" id="viewer-room"></p>
