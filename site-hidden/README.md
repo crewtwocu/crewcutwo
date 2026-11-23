@@ -1,9 +1,9 @@
-# Sly Productions — landing site
+# Slide Productions — landing site
 
 Static site (plain HTML/CSS/JS, no build step). *No story stays buried.*
 
 ```
-sly-productions/
+site-hidden/
   index.html            v1 page
   v2-truth/index.html   v2 page
   v3-story/index.html   v3 page
@@ -28,11 +28,11 @@ All three share `styles.css`, `script.js` and `config.js` in this folder.
 From the repo root:
 
 ```
-cd sly-productions && python3 -m http.server 8080
+cd site-hidden && python3 -m http.server 8080
 ```
 
 Then open http://localhost:8080/ (v1), http://localhost:8080/v2-truth/ (v2)
-and http://localhost:8080/v3-story/ (v3). Serve from `sly-productions/` so the
+and http://localhost:8080/v3-story/ (v3). Serve from `site-hidden/` so the
 v2 and v3 pages can reach the shared files at `../`.
 
 ## Where submissions go

@@ -1,9 +1,9 @@
-/* Sly Productions — nav, form validation, resume inspection, FormSubmit wiring.
- * No build step. Reads window.SLY_CONFIG from config.js. */
+/* Slide Productions — nav, form validation, resume inspection, FormSubmit wiring.
+ * No build step. Reads window.SLIDE_CONFIG from config.js. */
 (function () {
   "use strict";
 
-  var CFG = window.SLY_CONFIG || {};
+  var CFG = window.SLIDE_CONFIG || {};
   var EMAIL = String(CFG.SUBMIT_EMAIL || "").trim();
   var MAX_MB = Number(CFG.MAX_RESUME_MB) || 5;
   var MAX_BYTES = MAX_MB * 1024 * 1024;

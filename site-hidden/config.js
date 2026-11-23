@@ -1,5 +1,5 @@
 /* =====================================================================
- * SLY PRODUCTIONS — SUBMISSIONS CONFIG
+ * SLIDE PRODUCTIONS — SUBMISSIONS CONFIG
  * =====================================================================
  *
  *  DESTINATION EMAIL IS SET BELOW. After FormSubmit activation, swap it
@@ -17,7 +17,7 @@
  *  activation email to that address. Click the link in it, or nothing
  *  will be delivered. See README.md.
  * ===================================================================== */
-window.SLY_CONFIG = {
+window.SLIDE_CONFIG = {
   SUBMIT_EMAIL: "lukecripps@yahoo.com", // closed inbox. TODO: swap for FormSubmit random alias after activation (see README)
   MAX_RESUME_MB: 5,
 };
