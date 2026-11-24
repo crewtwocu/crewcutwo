@@ -18,17 +18,24 @@
   var toggle = document.querySelector(".nav-toggle");
   var menu = $("nav-menu");
   if (toggle && menu) {
+    function setMenu(open) {
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      menu.classList.toggle("open", open);
+      document.body.classList.toggle("nav-open", open);
+    }
     toggle.addEventListener("click", function () {
-      var open = toggle.getAttribute("aria-expanded") === "true";
-      toggle.setAttribute("aria-expanded", String(!open));
-      toggle.setAttribute("aria-label", open ? "Open menu" : "Close menu");
-      menu.classList.toggle("open", !open);
+      setMenu(toggle.getAttribute("aria-expanded") !== "true");
     });
     menu.addEventListener("click", function (e) {
-      if (e.target.closest("a")) {
-        menu.classList.remove("open");
-        toggle.setAttribute("aria-expanded", "false");
-        toggle.setAttribute("aria-label", "Open menu");
+      if (e.target.closest("a")) setMenu(false);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") setMenu(false);
+    });
+    document.addEventListener("click", function (e) {
+      if (toggle.getAttribute("aria-expanded") === "true" && !e.target.closest(".nav")) {
+        setMenu(false);
       }
     });
   }
@@ -48,9 +55,34 @@
   var fileErr = $("resume-err");
 
   // Success state: FormSubmit redirects back here with ?sent=1
-  if (/[?&]sent=1\b/.test(location.search)) {
+  function showForm() {
+    form.hidden = false;
+    if (document.querySelector(".case-form-wrap")) {
+      document.querySelector(".case-form-wrap").classList.remove("is-sent");
+    }
+  }
+  function showSuccess() {
     sentOk.hidden = false;
+    form.hidden = true;
+    if (document.querySelector(".case-form-wrap")) {
+      document.querySelector(".case-form-wrap").classList.add("is-sent");
+    }
     setTimeout(function () { sentOk.focus(); }, 50);
+  }
+  if (/[?&]sent=1\b/.test(location.search)) {
+    showSuccess();
+  }
+  var again = $("submit-again");
+  if (again) {
+    again.addEventListener("click", function () {
+      sentOk.hidden = true;
+      showForm();
+      if (window.history && history.replaceState) {
+        history.replaceState({}, "", location.pathname + location.hash);
+      }
+      var first = $("pitch");
+      if (first) first.focus();
+    });
   }
 
   if (CONNECTED) {
@@ -76,7 +108,7 @@
   function validateFields() {
     var ok = true;
     var pitch = $("pitch").value.trim();
-    ok = setErr("pitch", !pitch ? "The story is missing. Tell us what happened."
+    ok = setErr("pitch", !pitch ? "The story idea is missing. Tell us the idea."
       : pitch.length < 20 ? "Too thin. Give us at least 20 characters." : "") && ok;
     var name = $("name").value.trim();
     ok = setErr("name", name ? "" : "We need a name to put on the file.") && ok;
