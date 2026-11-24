@@ -23,8 +23,13 @@
     return [{ img: it.img, alt: it.alt || "" }];
   }
   function src(stem, small) { return "img/" + stem + (small ? "-600" : "") + ".jpg"; }
+  function displayVal(s) {
+    s = String(s == null ? "" : s).trim();
+    if (!s || /^unspecified$/i.test(s)) return "";
+    return s;
+  }
   function metaLine(it) {
-    return [it.era, it.origin].filter(function (s) { return String(s || "").trim(); }).join(" · ");
+    return [displayVal(it.era), displayVal(it.origin)].filter(Boolean).join(" · ");
   }
 
   var yr = $("#year"); if (yr) yr.textContent = new Date().getFullYear();
@@ -136,9 +141,9 @@
     $("#viewer-meta").textContent = metaLine(it);
     $("#viewer-story").textContent = it.story || it.blurb;
     var facts = "";
-    if (it.era) facts += '<div><dt>Period</dt><dd>' + esc(it.era) + '</dd></div>';
-    if (it.origin) facts += '<div><dt>Origin</dt><dd>' + esc(it.origin) + '</dd></div>';
-    if (it.material) facts += '<div><dt>Material</dt><dd>' + esc(it.material) + '</dd></div>';
+    if (displayVal(it.era)) facts += '<div><dt>Period</dt><dd>' + esc(displayVal(it.era)) + '</dd></div>';
+    if (displayVal(it.origin)) facts += '<div><dt>Origin</dt><dd>' + esc(displayVal(it.origin)) + '</dd></div>';
+    if (displayVal(it.material)) facts += '<div><dt>Material</dt><dd>' + esc(displayVal(it.material)) + '</dd></div>';
     $("#viewer-facts").innerHTML = facts;
     $("#viewer-price").textContent = price(it);
     if (history.replaceState) history.replaceState(null, "", "#piece-" + it.id);

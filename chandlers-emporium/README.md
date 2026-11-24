@@ -38,10 +38,11 @@ Prepare photos before adding them: long edge about 1600 px, a 600 px thumb
 named `<stem>-600.jpg`, JPEG quality around 80, auto-oriented, with EXIF and
 GPS metadata stripped.
 
-## Still placeholders
+## Still to confirm
 
-- **Visit details:** address, opening hours, phone and email are bracketed
-  placeholders in the `#visit` section of `index.html`.
+- **Visit details:** the `#visit` section invites people to the shop and to
+  enquire, but does not list an address, opening hours, phone or email until
+  those are confirmed. Do not invent them.
 - **Shop story:** the intro is deliberately general. No history, owners or
   reviews have been written in.
 
