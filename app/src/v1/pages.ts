@@ -6,11 +6,73 @@ function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 }
 
-function shell(title: string, body: string): string {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)} · Crew</title><link rel="stylesheet" href="/public/style.css">
-<style>table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:.4rem .6rem;border-bottom:1px solid #ddd}main{max-width:860px;width:100%;min-width:0;box-sizing:border-box;margin:2rem auto;padding:0 1rem}.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}@media (max-width:480px){th,td{padding:.35rem .4rem;font-size:.9rem}}</style>
-</head><body><main>${body}<p><small><a href="/jobs">Job log</a> · <a href="/terms">Terms</a> · <a href="/hard-limits">Hard limits</a> · <a href="/llms.txt">llms.txt</a></small></p></main>${matchBeaconScript}</body></html>`;
+function entryFeeLabel(): string {
+  const dollars = policy.entryFeeCents() / 100;
+  return Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`;
+}
+
+const MARKETING_URL = "https://crewcutwo-marketing.onrender.com";
+const MATCH_URL = "https://crewcutwo.onrender.com";
+const CREW_FAVICON =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231C2430'/%3E%3Crect x='7' y='11' width='4.5' height='12' rx='2.25' fill='%23E8E4DE'/%3E%3Crect x='13.75' y='7' width='4.5' height='18' rx='2.25' fill='%23C4784A'/%3E%3Crect x='20.5' y='11' width='4.5' height='12' rx='2.25' fill='%23E8E4DE'/%3E%3C/svg%3E";
+
+function shell(title: string, body: string, extraHead = ""): string {
+  const pageTitle = `${esc(title)} — Crew`;
+  const description = "Crew — Anonymous match. Pay $5 each side. One-time reveal. Then we vanish.";
+  return `<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="${description}" />
+  <meta property="og:title" content="${pageTitle}" />
+  <meta property="og:description" content="${description}" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="${MATCH_URL}/" />
+  <meta property="og:image" content="${MATCH_URL}/public/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${pageTitle}" />
+  <meta name="twitter:description" content="${description}" />
+  <meta name="twitter:image" content="${MATCH_URL}/public/og-image.png" />
+  <meta name="theme-color" content="#1C2430" />
+  <title>${pageTitle}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/public/style.css" />
+  <link rel="icon" href="${CREW_FAVICON}" />
+  <link rel="apple-touch-icon" href="/public/apple-touch-icon.png" />
+  ${extraHead}
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a href="/" class="brand" aria-label="Crew home">
+        <svg class="brand-mark" width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="currentColor"/>
+          <rect x="7" y="11" width="4.5" height="12" rx="2.25" fill="#E8E4DE"/>
+          <rect x="13.75" y="7" width="4.5" height="18" rx="2.25" fill="#C4784A"/>
+          <rect x="20.5" y="11" width="4.5" height="12" rx="2.25" fill="#E8E4DE"/>
+        </svg>
+        <span class="brand-text">Crew</span>
+      </a>
+      <p class="tagline">Anonymous match · $5 each · then vanish</p>
+      <a class="header-link" href="${MARKETING_URL}">About Crew</a>
+    </div>
+  </header>
+  <main id="main" class="wrap">
+    ${body}
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <p class="footer-tagline">Don’t hire a hack. We connect you. Then we vanish.</p>
+      <p class="footer-meta"><a href="${MARKETING_URL}">How Crew works</a> · <a href="/">Create a match</a> · <a href="/jobs">Job log</a> · <a href="/terms">Terms</a> · <a href="/hard-limits">Hard limits</a> · <a href="/llms.txt">llms.txt</a></p>
+    </div>
+  </footer>
+  ${matchBeaconScript}
+</body>
+</html>`;
 }
 
 export function hardLimitsPage(): string {
@@ -28,7 +90,7 @@ export function hardLimitsPage(): string {
 </ul>
 <p>Matches that break these rules are cancelled.</p>
 <h2>What it costs</h2>
-<p>${isLiveMode() ? "Each side pays" : "When payments open, each side pays"} a flat $${(policy.entryFeeCents() / 100).toFixed(2)} to connect, one time. That is all Crew charges. Any price for the work itself is agreed directly between you and whoever you connect with.</p>
+<p>${isLiveMode() ? "Each side pays" : "When payments open, each side pays"} a flat ${entryFeeLabel()} to connect, one time. That is all Crew charges. Any price for the work itself is agreed directly between you and whoever you connect with.</p>
 <p>See the <a href="/terms">terms</a>.</p>`
   );
 }
@@ -37,14 +99,22 @@ export function jobsPage(
   jobs: { ref: string | null; category: string; suggested_price_usd: number; status: string; posted_on: string; turnaround_hours: number | null }[],
   _ratings?: unknown
 ): string {
-  const rows = jobs.length
-    ? jobs.map((j) => `<tr><td>${esc(j.posted_on)}</td><td><code>${esc(j.category)}</code></td><td>$${j.suggested_price_usd.toFixed(2)}</td><td>${esc(j.status)}</td><td>${j.turnaround_hours === null ? "–" : `${j.turnaround_hours}h`}</td><td>${j.ref ? `<a href="/report/${esc(j.ref)}" rel="nofollow">Report</a>` : ""}</td></tr>`).join("")
-    : `<tr><td colspan="6">No jobs yet.</td></tr>`;
+  const table = jobs.length
+    ? `<div class="table-scroll"><table>
+<thead><tr><th>Posted</th><th>Category</th><th>Suggested price</th><th>Status</th><th>Turnaround</th><th></th></tr></thead>
+<tbody>${jobs
+        .map(
+          (j) =>
+            `<tr><td>${esc(j.posted_on)}</td><td><code>${esc(j.category)}</code></td><td>$${j.suggested_price_usd.toFixed(2)}</td><td>${esc(j.status)}</td><td>${j.turnaround_hours === null ? "–" : `${j.turnaround_hours}h`}</td><td>${j.ref ? `<a href="/report/${esc(j.ref)}" rel="nofollow">Report</a>` : ""}</td></tr>`
+        )
+        .join("")}</tbody>
+</table></div>`
+    : `<p class="jobs-empty">No jobs published yet.</p>`;
   return shell(
     "Job log",
     `<h1>Public job log</h1>
 <p>Anonymised: category, suggested price, status and turnaround only. No briefs, results, or identities are published.</p>
-<div class="table-scroll"><table><tr><th>Posted</th><th>Category</th><th>Suggested price</th><th>Status</th><th>Turnaround</th><th></th></tr>${rows}</table></div>`
+${table}`
   );
 }
 
@@ -79,8 +149,11 @@ export function reportPage(ref: string): string {
     "Report a job",
     `<h1>Report a job</h1>
 <p>Job <code>${esc(ref)}</code>. Tell us why it breaks the rules (e.g. banned work). A human reviews every report.</p>
-<form method="post" action="/v1/tasks/${encodeURIComponent(ref)}/report">
-<p><textarea name="reason" rows="5" cols="60" minlength="5" maxlength="2000" required></textarea></p>
+<form method="post" action="/v1/tasks/${encodeURIComponent(ref)}/report" class="card">
+<div class="field">
+<label for="reason">Reason</label>
+<textarea id="reason" name="reason" rows="5" minlength="5" maxlength="2000" required></textarea>
+</div>
 <button type="submit">Send report</button>
 </form>`
   );

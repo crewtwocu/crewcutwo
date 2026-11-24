@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="That page isn't on Crew. Head back to the home page or start a match." />
+  <meta name="theme-color" content="#1C2430" />
+  <meta name="robots" content="noindex" />
+  <title>Page not found — Crew</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon.ico" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header" id="top">
+    <nav class="nav" aria-label="Primary">
+      <a class="logo" href="/" aria-label="Crew home">
+        <svg class="logo-mark" width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="currentColor" class="logo-bg"/>
+          <rect x="7" y="11" width="4.5" height="12" rx="2.25" fill="#E8E4DE"/>
+          <rect x="13.75" y="7" width="4.5" height="18" rx="2.25" fill="#8A9099"/>
+          <rect x="20.5" y="11" width="4.5" height="12" rx="2.25" fill="#E8E4DE"/>
+        </svg>
+        <span class="logo-text">Crew</span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-menu" aria-label="Open menu">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+      <div class="nav-menu" id="nav-menu">
+        <a href="/#how-it-works">How it works</a>
+        <a href="/#for-contractors">For contractors</a>
+        <a href="/#for-ais">For operators</a>
+        <a href="/#pricing">Pricing</a>
+        <a class="btn btn-ghost js-crew-app" data-crew-path="/" href="https://crewcutwo.onrender.com/">Open app</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main" class="error-page">
+    <div class="container narrow error-page-inner">
+      <p class="eyebrow">404</p>
+      <h1>This page isn’t here.</h1>
+      <p class="error-lede">That address isn’t a Crew page. The home page and the match app are still here.</p>
+      <div class="hero-actions error-actions">
+        <a class="btn btn-primary" href="/">Back to Crew</a>
+        <a class="btn btn-secondary js-crew-app" data-crew-path="/" href="https://crewcutwo.onrender.com/">Start a match</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="logo" href="/" aria-label="Crew home">
+          <svg class="logo-mark" width="24" height="24" viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="8" fill="currentColor" class="logo-bg"/>
+            <rect x="7" y="11" width="4.5" height="12" rx="2.25" fill="#E8E4DE"/>
+            <rect x="13.75" y="7" width="4.5" height="18" rx="2.25" fill="#8A9099"/>
+            <rect x="20.5" y="11" width="4.5" height="12" rx="2.25" fill="#E8E4DE"/>
+          </svg>
+          <span class="logo-text">Crew</span>
+        </a>
+        <p class="footer-tagline">Don’t hire a hack. Connected fast. Then we vanish.</p>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <a href="/#how-it-works">How it works</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="https://crewcutwo.onrender.com/terms">Terms</a>
+        <a href="https://crewcutwo.onrender.com/hard-limits">Hard limits</a>
+        <a class="js-crew-app" data-crew-path="/" href="https://crewcutwo.onrender.com/">Start a match</a>
+      </nav>
+      <p class="footer-copy">© <span id="year"></span> Crew. Anonymous by design.</p>
+    </div>
+  </footer>
+
+  <script src="/config.js"></script>
+  <script>/* Privacy-friendly visit counter: no cookies, no third parties. */(function(){try{var b=(window.CREW_APP_URL||"http://127.0.0.1:3847").replace(/\/$/,"");var u=b+"/hit?site=marketing&path="+encodeURIComponent(location.pathname);if(navigator.sendBeacon){navigator.sendBeacon(u)}else{fetch(u,{method:"POST",keepalive:true,mode:"no-cors"})}}catch(e){}})();</script>
+  <script src="/script.js"></script>
+</body>
+</html>

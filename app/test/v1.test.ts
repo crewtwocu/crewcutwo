@@ -316,7 +316,7 @@ test("public pages: terms, hard limits, jobs", async () => {
   const terms = await (await fetch(base + "/terms")).text();
   assert.ok(terms.includes("not a party") && terms.includes("Nothing is charged") && !terms.includes("TEST MODE") && !/xmr|usdc|rating|accept_terms|banned_work/i.test(terms));
   const h = await (await fetch(base + "/hard-limits")).text();
-  assert.ok(h.includes("CAPTCHA") && h.includes("$5.00") && !h.includes("80%"));
+  assert.ok(h.includes("CAPTCHA") && h.includes("$5") && !h.includes("80%"));
   assert.equal((await api("GET", "/v1/terms")).json.summary.includes("not a party"), true);
 });
 
