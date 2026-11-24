@@ -1316,3 +1316,43 @@ a:hover { color: var(--accent-text-hover); }
     width: min(100% - 2rem, var(--max));
   }
 }
+
+
+/* Error / 404 */
+.error-page {
+  min-height: calc(100vh - var(--header-h) - 14rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) 0;
+  background: var(--bg);
+}
+.error-page-inner {
+  text-align: center;
+}
+.error-page .eyebrow {
+  margin: 0 0 var(--space-3);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.error-page h1 {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-serif);
+  font-size: clamp(2.25rem, 6vw, 3.5rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--text);
+}
+.error-lede {
+  margin: 0 auto var(--space-6);
+  max-width: 28rem;
+  font-size: 1.0625rem;
+  color: var(--text-muted);
+}
+.error-actions {
+  justify-content: center;
+}

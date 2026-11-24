@@ -86,18 +86,32 @@ const MARKETING_URL = "https://crewcutwo-marketing.onrender.com";
 const CREW_FAVICON =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231C2430'/%3E%3Crect x='7' y='11' width='4.5' height='12' rx='2.25' fill='%23E8E4DE'/%3E%3Crect x='13.75' y='7' width='4.5' height='18' rx='2.25' fill='%23C4784A'/%3E%3Crect x='20.5' y='11' width='4.5' height='12' rx='2.25' fill='%23E8E4DE'/%3E%3C/svg%3E";
 
+const MATCH_PUBLIC_URL = "https://crewcutwo.onrender.com";
+
 const pageShell = (title: string, body: string, extraHead = "") => `<!DOCTYPE html>
 <html lang="en-AU">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Crew — Anonymous match. Pay $5 each side. One-time reveal. Then we vanish." />
+  <meta property="og:title" content="${escapeHtml(title)} — Crew" />
+  <meta property="og:description" content="Crew — Anonymous match. Pay $5 each side. One-time reveal. Then we vanish." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="${MATCH_PUBLIC_URL}/" />
+  <meta property="og:image" content="${MATCH_PUBLIC_URL}/public/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${escapeHtml(title)} — Crew" />
+  <meta name="twitter:description" content="Crew — Anonymous match. Pay $5 each side. One-time reveal. Then we vanish." />
+  <meta name="twitter:image" content="${MATCH_PUBLIC_URL}/public/og-image.png" />
+  <meta name="theme-color" content="#1C2430" />
   <title>${escapeHtml(title)} — Crew</title>
+  <link rel="canonical" href="${MATCH_PUBLIC_URL}/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/public/style.css" />
   <link rel="icon" href="${CREW_FAVICON}" />
+  <link rel="apple-touch-icon" href="/public/apple-touch-icon.png" />
   ${extraHead}
 </head>
 <body>
@@ -123,7 +137,7 @@ const pageShell = (title: string, body: string, extraHead = "") => `<!DOCTYPE ht
   <footer class="site-footer">
     <div class="wrap footer-inner">
       <p class="footer-tagline">Don’t hire a hack. We connect you. Then we vanish.</p>
-      <p class="footer-meta"><a href="${MARKETING_URL}">How Crew works</a> · <a href="/#get-a-reply">Get a reply</a> · Anonymous by design</p>
+      <p class="footer-meta"><a href="${MARKETING_URL}">How Crew works</a> · <a href="/#get-a-reply">Get a reply</a> · <a href="/terms">Terms</a> · <a href="/hard-limits">Hard limits</a></p>
     </div>
   </footer>
   ${matchBeaconScript}
@@ -442,6 +456,45 @@ if (document.readyState === "loading") {
 app.get("/favicon.ico", (_req, res) => {
   const svg = decodeURIComponent(CREW_FAVICON.replace(/^data:image\/svg\+xml,/, ""));
   res.set("Cache-Control", "public, max-age=86400").type("image/svg+xml").send(svg);
+});
+
+app.get("/robots.txt", (_req, res) => {
+  res
+    .type("text/plain")
+    .set("Cache-Control", "public, max-age=86400")
+    .send(
+      `User-agent: *
+Allow: /
+Allow: /terms
+Allow: /hard-limits
+Allow: /jobs
+Allow: /llms.txt
+Disallow: /api/
+Disallow: /v1/
+Disallow: /m/
+Disallow: /hit
+Disallow: /pay
+Disallow: /report/
+
+Sitemap: ${MATCH_PUBLIC_URL}/sitemap.xml
+`
+    );
+});
+
+app.get("/sitemap.xml", (_req, res) => {
+  res
+    .type("application/xml")
+    .set("Cache-Control", "public, max-age=3600")
+    .send(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>${MATCH_PUBLIC_URL}/</loc></url>
+  <url><loc>${MATCH_PUBLIC_URL}/terms</loc></url>
+  <url><loc>${MATCH_PUBLIC_URL}/hard-limits</loc></url>
+  <url><loc>${MATCH_PUBLIC_URL}/jobs</loc></url>
+</urlset>
+`
+    );
 });
 
 app.get("/health", (_req, res) => {
@@ -931,7 +984,14 @@ function renderSidePage(matchId: string, side: "contractor" | "operator", res: e
   // Peek only — do not reveal on HTML paint; JS poll hits GET /api/matches/:id for reveal.
   const peek = peekMatchForPage(matchId);
   if (!peek) {
-    return res.status(404).type("html").send(pageShell("Not found", "<h1>Match not found</h1>"));
+    return res.status(404).type("html").send(pageShell(
+      "Not found",
+      `<div class="error-page">
+      <h1>Match not found</h1>
+      <p class="lede">That match isn't available. It may have expired or the link is wrong.</p>
+      <p class="error-actions"><a class="btn" href="/">Create a match</a> <a class="btn btn-ghost" href="${MARKETING_URL}">About Crew</a></p>
+    </div>`
+    ));
   }
 
   const myInv = peek.invoices.find((i) => i.side === side);
@@ -1073,7 +1133,14 @@ app.get("/m/:id/operator", (req, res) => {
 app.get("/m/:id", (req, res) => {
   const peek = peekMatchForPage(req.params.id);
   if (!peek) {
-    return res.status(404).type("html").send(pageShell("Not found", "<h1>Match not found</h1>"));
+    return res.status(404).type("html").send(pageShell(
+      "Not found",
+      `<div class="error-page">
+      <h1>Match not found</h1>
+      <p class="lede">That match isn't available. It may have expired or the link is wrong.</p>
+      <p class="error-actions"><a class="btn" href="/">Create a match</a> <a class="btn btn-ghost" href="${MARKETING_URL}">About Crew</a></p>
+    </div>`
+    ));
   }
 
   const base = (process.env.PUBLIC_BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, "");
@@ -1260,7 +1327,14 @@ app.get("/mock-pay/:invoiceId", (req, res) => {
     | { id: string; match_id: string; side: string; status: string; expires_at: string | null }
     | undefined;
   if (!invoice) {
-    return res.status(404).type("html").send(pageShell("Not found", "<h1>Invoice not found</h1>"));
+    return res.status(404).type("html").send(pageShell(
+      "Not found",
+      `<div class="error-page">
+      <h1>Invoice not found</h1>
+      <p class="lede">That payment page isn't available. It may have expired or the link is wrong.</p>
+      <p class="error-actions"><a class="btn" href="/">Create a match</a></p>
+    </div>`
+    ));
   }
   const returnTo =
     typeof req.query.returnTo === "string" &&
@@ -1310,6 +1384,27 @@ app.get("/mock-pay/:invoiceId", (req, res) => {
     </form>
     <p><a href="${escapeHtml(returnTo)}">Cancel</a></p>
   `
+    )
+  );
+});
+
+app.use((req, res) => {
+  const accept = String(req.get("accept") || "");
+  const wantsJson =
+    req.path.startsWith("/api") ||
+    req.path.startsWith("/v1") ||
+    (accept.includes("application/json") && !accept.includes("text/html"));
+  if (wantsJson) {
+    return res.status(404).json({ error: "not found" });
+  }
+  res.status(404).type("html").send(
+    pageShell(
+      "Page not found",
+      `<div class="error-page">
+      <h1>This page isn’t here.</h1>
+      <p class="lede">That address isn’t a Crew page. You can start a match or read how Crew works.</p>
+      <p class="error-actions"><a class="btn" href="/">Create a match</a> <a class="btn btn-ghost" href="${MARKETING_URL}">About Crew</a></p>
+    </div>`
     )
   );
 });
